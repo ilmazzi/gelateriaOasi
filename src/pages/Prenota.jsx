@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -110,12 +110,62 @@ export default function Prenota() {
       toast({ title: "Campi obbligatori", description: "Compila tutti i campi obbligatori.", variant: "destructive" });
       return;
     }
+
+    const currentDate = new Date();
+    const isToday = isSameLocalDate(form.data_ritiro, currentDate);
+
+    if (isToday && form.ora_ritiro) {
+      const selectedMinutes = toMinutes(form.ora_ritiro);
+      const nowMinutes = currentDate.getHours() * 60 + currentDate.getMinutes();
+
+      if (selectedMinutes <= nowMinutes) {
+        toast({
+          title: "Orario non valido",
+          description: "Per oggi scegli un orario successivo a quello attuale.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     mutation.mutate();
   };
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
+
+  const toMinutes = (time) => {
+    const [hours, minutes] = String(time || "0:0").split(":").map(Number);
+    return (hours || 0) * 60 + (minutes || 0);
+  };
+
+  const isSameLocalDate = (dateStr, referenceDate) => {
+    if (!dateStr) return false;
+    const [year, month, day] = dateStr.split("-").map(Number);
+    return (
+      year === referenceDate.getFullYear() &&
+      month === referenceDate.getMonth() + 1 &&
+      day === referenceDate.getDate()
+    );
+  };
+
+  const availableOrari = useMemo(() => {
+    if (!form.data_ritiro) return orari;
+
+    const now = new Date();
+    if (!isSameLocalDate(form.data_ritiro, now)) return orari;
+
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    return orari.filter((time) => toMinutes(time) > nowMinutes);
+  }, [form.data_ritiro]);
+
+  useEffect(() => {
+    if (!form.ora_ritiro) return;
+    if (!availableOrari.includes(form.ora_ritiro)) {
+      setForm((prev) => ({ ...prev, ora_ritiro: "" }));
+    }
+  }, [availableOrari, form.ora_ritiro]);
 
   const togglePaninoSelection = (panino) => {
     setForm((prev) => {
@@ -258,7 +308,12 @@ export default function Prenota() {
                   >
                     <NativeSelectOption className="" value="">Seleziona orario</NativeSelectOption>
                     {orari.map((o) => (
-                      <NativeSelectOption className="" key={o} value={o}>
+                      <NativeSelectOption
+                        className=""
+                        key={o}
+                        value={o}
+                        disabled={!availableOrari.includes(o)}
+                      >
                         {o}
                       </NativeSelectOption>
                     ))}
@@ -270,7 +325,9 @@ export default function Prenota() {
                     </SelectTrigger>
                     <SelectContent className="">
                       {orari.map((o) => (
-                        <SelectItem className="" key={o} value={o}>{o}</SelectItem>
+                        <SelectItem className="" key={o} value={o} disabled={!availableOrari.includes(o)}>
+                          {o}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
