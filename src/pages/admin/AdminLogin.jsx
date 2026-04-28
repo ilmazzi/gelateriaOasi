@@ -10,7 +10,9 @@ import { useAuth } from "@/lib/AuthContext";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
-  const [sending, setSending] = useState(false);
+  const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -30,12 +32,41 @@ export default function AdminLogin() {
     }
   }, [authChecked, isAdmin, isAuthenticated, isLoadingAuth, navigate, redirectTarget]);
 
-  const handleSubmit = async (event) => {
+  const handlePasswordLogin = async (event) => {
     event.preventDefault();
-    if (!email) return;
+    if (!email || !password) return;
 
     try {
-      setSending(true);
+      setIsSubmitting(true);
+      const supabase = assertSupabase();
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+    } catch (error) {
+      toast({
+        title: "Login non riuscito",
+        description: error.message || "Controlla email e password.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleMagicLink = async () => {
+    if (!email) {
+      toast({
+        title: "Inserisci email",
+        description: "Per inviare il link magico devi prima inserire l'email.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSendingMagicLink(true);
       const supabase = assertSupabase();
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -51,12 +82,12 @@ export default function AdminLogin() {
       });
     } catch (error) {
       toast({
-        title: "Login non riuscito",
+        title: "Invio link non riuscito",
         description: error.message || "Verifica configurazione Supabase e riprova.",
         variant: "destructive",
       });
     } finally {
-      setSending(false);
+      setIsSendingMagicLink(false);
     }
   };
 
@@ -72,7 +103,7 @@ export default function AdminLogin() {
               Sei autenticato ma non hai ruolo admin. Contatta il proprietario per assegnare `profiles.role = admin`.
             </p>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handlePasswordLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="admin-email">Email</Label>
                 <Input
@@ -84,8 +115,28 @@ export default function AdminLogin() {
                   required
                 />
               </div>
-              <Button className="w-full" type="submit" disabled={sending}>
-                {sending ? "Invio link..." : "Invia link magico"}
+              <div className="space-y-2">
+                <Label htmlFor="admin-password">Password</Label>
+                <Input
+                  id="admin-password"
+                  type="password"
+                  placeholder="Inserisci la password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                />
+              </div>
+              <Button className="w-full" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Accesso in corso..." : "Accedi"}
+              </Button>
+              <Button
+                className="w-full"
+                type="button"
+                variant="outline"
+                onClick={handleMagicLink}
+                disabled={isSendingMagicLink}
+              >
+                {isSendingMagicLink ? "Invio link..." : "Usa link magico"}
               </Button>
             </form>
           )}

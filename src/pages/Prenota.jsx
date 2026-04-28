@@ -45,8 +45,12 @@ export default function Prenota() {
       setSuccess(true);
       setForm(initialForm);
     },
-    onError: () => {
-      toast({ title: "Errore", description: "Si è verificato un errore. Riprova.", variant: "destructive" });
+    onError: (error) => {
+      toast({
+        title: "Errore",
+        description: error?.message || "Si è verificato un errore. Riprova.",
+        variant: "destructive",
+      });
     },
   });
 
