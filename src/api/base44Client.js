@@ -100,7 +100,22 @@ const makeEntity = (entityName) => {
       return runWithClientLock(async () => {
         const client = assertSupabase();
         const result = await client.from(table).update(payload).eq("id", id).select().single();
-        return normalizeRow(ensureOk(result, `Aggiornamento ${table}`));
+        const record = normalizeRow(ensureOk(result, `Aggiornamento ${table}`));
+
+        if (entityName === "Prenotazione" && payload?.stato && record?.email) {
+          try {
+            await notifyBookingStatusEmail(client, record);
+            return { ...record, _statusEmailSent: true };
+          } catch (error) {
+            return {
+              ...record,
+              _statusEmailSent: false,
+              _statusEmailError: error.message || "Invio email stato non riuscito",
+            };
+          }
+        }
+
+        return record;
       });
     },
 
@@ -139,6 +154,16 @@ const notifyBookingEmails = async (client, booking) => {
 
   if (error) {
     throw new Error(`Invio email fallito: ${error.message}`);
+  }
+};
+
+const notifyBookingStatusEmail = async (client, booking) => {
+  const { error } = await client.functions.invoke("send-booking-status-email", {
+    body: { booking },
+  });
+
+  if (error) {
+    throw new Error(`Invio email stato fallito: ${error.message}`);
   }
 };
 

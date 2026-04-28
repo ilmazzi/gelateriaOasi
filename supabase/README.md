@@ -35,3 +35,15 @@ Deploy edge function:
 When a booking is created from `Prenota`, the app invokes this function and sends:
 - one email to gelateria
 - one confirmation email to cliente (if email is provided)
+
+## 5) Email su cambio stato prenotazione
+
+Deploy second edge function:
+
+1. `supabase functions deploy send-booking-status-email`
+
+This function reuses the same secrets:
+- `BREVO_API_KEY`
+- `BOOKING_FROM_EMAIL`
+
+When admin updates booking status (`in_attesa`, `confermata`, `pronta`, `ritirata`, `annullata`), the customer receives an update email automatically.

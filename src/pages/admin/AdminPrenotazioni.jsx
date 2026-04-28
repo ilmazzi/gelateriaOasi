@@ -38,7 +38,16 @@ export default function AdminPrenotazioni() {
 
   const updateMut = useMutation({
     mutationFn: ({ id, stato }) => base44.entities.Prenotazione.update(id, { stato }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-prenotazioni"] }),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-prenotazioni"] });
+      if (result?._statusEmailSent === false) {
+        toast({
+          title: "Stato aggiornato",
+          description: result._statusEmailError || "Email al cliente non inviata",
+          variant: "destructive",
+        });
+      }
+    },
     onError: (error) => {
       toast({ title: "Errore aggiornamento stato", description: error.message || "Verifica ruolo admin/policy", variant: "destructive" });
     },
