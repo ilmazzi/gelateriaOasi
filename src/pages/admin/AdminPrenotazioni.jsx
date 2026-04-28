@@ -5,7 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { useToast } from "@/components/ui/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Trash2, Phone, Mail, Calendar, Clock, ShoppingBag } from "lucide-react";
 
 const statoLabels = {
@@ -27,6 +29,7 @@ const statoColors = {
 export default function AdminPrenotazioni() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const { data: prenotazioni = [], isLoading } = useQuery({
     queryKey: ["admin-prenotazioni"],
@@ -113,19 +116,33 @@ export default function AdminPrenotazioni() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Select
-                      value={p.stato || "in_attesa"}
-                      onValueChange={(v) => updateMut.mutate({ id: p.id, stato: v })}
-                    >
-                      <SelectTrigger className="w-36 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
+                    {isMobile ? (
+                      <NativeSelect
+                        className="w-36 text-xs"
+                        value={p.stato || "in_attesa"}
+                        onChange={(event) => updateMut.mutate({ id: p.id, stato: event.target.value })}
+                      >
                         {Object.entries(statoLabels).map(([k, v]) => (
-                          <SelectItem key={k} value={k}>{v}</SelectItem>
+                          <NativeSelectOption key={k} value={k}>
+                            {v}
+                          </NativeSelectOption>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </NativeSelect>
+                    ) : (
+                      <Select
+                        value={p.stato || "in_attesa"}
+                        onValueChange={(v) => updateMut.mutate({ id: p.id, stato: v })}
+                      >
+                        <SelectTrigger className="w-36 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(statoLabels).map(([k, v]) => (
+                            <SelectItem key={k} value={k}>{v}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                     <Button size="icon" variant="ghost" onClick={() => deleteMut.mutate(p.id)}>
                       <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
