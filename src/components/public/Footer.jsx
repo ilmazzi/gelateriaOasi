@@ -9,7 +9,7 @@ export default function Footer() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <IceCreamCone className="w-6 h-6 text-primary" />
-              <span className="font-heading text-lg font-bold">Gelateria Oasi</span>
+              <span className="font-heading text-lg font-bold">Bar GelateriaL'Oasi</span>
             </div>
             <p className="text-sm text-muted-foreground font-body leading-relaxed">
               Gelato artigianale fatto con passione, ingredienti freschi e ricette della tradizione italiana.

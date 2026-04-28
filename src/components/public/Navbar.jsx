@@ -20,7 +20,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2 group">
             <IceCreamCone className="w-7 h-7 text-primary transition-transform group-hover:rotate-12" />
-            <span className="font-heading text-xl font-bold text-foreground">Gelateria Oasi</span>
+            <span className="font-heading text-xl font-bold text-foreground">Bar Gelateria L'Oasi</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">

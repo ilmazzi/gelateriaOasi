@@ -51,7 +51,7 @@ export default function Home() {
         <div className="absolute inset-0">
           <img
             src="https://media.base44.com/images/public/69f08e145cf272361c5bae33/a1b2a4602_generated_a0a69c1e.png"
-            alt="Gelateria Oasi"
+            alt="Bar Gelateria L'Oasi"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-transparent" />
