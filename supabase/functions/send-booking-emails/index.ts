@@ -17,7 +17,7 @@ type BookingPayload = {
   note?: string | null;
 };
 
-const formatBookingDetails = (booking: BookingPayload) => `
+const formatBookingDetailsText = (booking: BookingPayload) => `
 Nome: ${booking.nome_cliente}
 Telefono: ${booking.telefono}
 Email: ${booking.email || "-"}
@@ -29,7 +29,60 @@ Quantita: ${booking.quantita ?? 1}
 Note: ${booking.note || "-"}
 `;
 
-const sendBrevoEmail = async (to: string, subject: string, text: string) => {
+const escapeHtml = (value: string) =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+
+const bookingRows = (booking: BookingPayload) => [
+  ["Nome", booking.nome_cliente],
+  ["Telefono", booking.telefono],
+  ["Email", booking.email || "-"],
+  ["Data ritiro", booking.data_ritiro],
+  ["Ora ritiro", booking.ora_ritiro],
+  ["Gusti", booking.gusti],
+  ["Taglia", booking.taglia || "-"],
+  ["Quantita", String(booking.quantita ?? 1)],
+  ["Note", booking.note || "-"],
+];
+
+const buildEmailHtml = (title: string, subtitle: string, booking: BookingPayload) => {
+  const rows = bookingRows(booking)
+    .map(
+      ([label, value]) => `
+      <tr>
+        <td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#6b5b65;font-size:13px;width:34%;">${escapeHtml(label)}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#241a1f;font-size:13px;font-weight:600;">${escapeHtml(value)}</td>
+      </tr>
+    `,
+    )
+    .join("");
+
+  return `
+  <div style="margin:0;background:#fdf9fb;padding:24px;font-family:Inter,Arial,sans-serif;">
+    <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #f1e5ea;border-radius:18px;overflow:hidden;">
+      <div style="padding:18px 22px;background:linear-gradient(90deg,#fdf4f8 0%,#fff 100%);border-bottom:1px solid #f1e5ea;">
+        <div style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#b04979;font-weight:700;">Bar Gelateria L'Oasi</div>
+        <h1 style="margin:8px 0 0 0;font-size:24px;line-height:1.2;color:#241a1f;">${escapeHtml(title)}</h1>
+        <p style="margin:8px 0 0 0;color:#6b5b65;font-size:14px;">${escapeHtml(subtitle)}</p>
+      </div>
+      <div style="padding:18px 22px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;border:1px solid #f1e5ea;border-radius:12px;overflow:hidden;">
+          ${rows}
+        </table>
+      </div>
+      <div style="padding:14px 22px;background:#fff7fa;border-top:1px solid #f1e5ea;color:#8c6f7f;font-size:12px;">
+        Questo messaggio e stato inviato automaticamente dal sistema prenotazioni di Gelateria Oasi.
+      </div>
+    </div>
+  </div>
+  `;
+};
+
+const sendBrevoEmail = async (to: string, subject: string, text: string, html: string) => {
   const brevoApiKey = Deno.env.get("BREVO_API_KEY");
   const fromEmail = Deno.env.get("BOOKING_FROM_EMAIL");
 
@@ -53,6 +106,7 @@ const sendBrevoEmail = async (to: string, subject: string, text: string) => {
       to: [{ email: to }],
       subject,
       textContent: text,
+      htmlContent: html,
     }),
   });
 
@@ -81,12 +135,17 @@ serve(async (req) => {
       throw new Error("Config mancante: GELATERIA_BOOKING_EMAIL");
     }
 
-    const details = formatBookingDetails(booking);
+    const details = formatBookingDetailsText(booking);
 
     await sendBrevoEmail(
       gelateriaEmail,
       `Nuova prenotazione - ${booking.nome_cliente}`,
       `Hai ricevuto una nuova prenotazione.\n\n${details}`,
+      buildEmailHtml(
+        "Nuova prenotazione ricevuta",
+        "Dettagli ordine cliente",
+        booking as BookingPayload,
+      ),
     );
 
     if (booking.email) {
@@ -94,6 +153,11 @@ serve(async (req) => {
         booking.email,
         "Conferma ricezione prenotazione - Gelateria Oasi",
         `Ciao ${booking.nome_cliente},\nabbiamo ricevuto la tua prenotazione.\n\n${details}\nTi ricontatteremo al piu presto.`,
+        buildEmailHtml(
+          "Prenotazione ricevuta",
+          `Ciao ${booking.nome_cliente}, abbiamo preso in carico il tuo ordine.`,
+          booking as BookingPayload,
+        ),
       );
     }
 
