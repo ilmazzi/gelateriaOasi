@@ -76,10 +76,16 @@ const makeEntity = (entityName) => {
           entityName === "Prenotazione"
             ? { stato: "in_attesa", ...payload }
             : payload;
-        const result = await client.from(table).insert(dataToInsert).select().single();
-        const record = normalizeRow(ensureOk(result, `Creazione ${table}`));
 
         if (entityName === "Prenotazione") {
+          // For public bookings we cannot require a SELECT policy just to return the inserted row.
+          const insertResult = await client.from(table).insert(dataToInsert);
+          ensureOk(insertResult, `Creazione ${table}`);
+          const record = normalizeRow({
+            ...dataToInsert,
+            created_at: new Date().toISOString(),
+          });
+
           try {
             await notifyBookingEmails(client, record);
             return { ...record, _emailSent: true };
@@ -92,6 +98,8 @@ const makeEntity = (entityName) => {
           }
         }
 
+        const result = await client.from(table).insert(dataToInsert).select().single();
+        const record = normalizeRow(ensureOk(result, `Creazione ${table}`));
         return record;
       });
     },
