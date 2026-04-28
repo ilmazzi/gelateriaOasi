@@ -13,6 +13,7 @@ import Home from '@/pages/Home';
 import MenuGelati from '@/pages/MenuGelati';
 import Promozioni from '@/pages/Promozioni';
 import Prenota from '@/pages/Prenota';
+import Panini from '@/pages/Panini';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import AdminGelati from '@/pages/admin/AdminGelati';
@@ -21,6 +22,7 @@ import AdminFoto from '@/pages/admin/AdminFoto';
 import AdminPrenotazioni from '@/pages/admin/AdminPrenotazioni';
 import AdminLogin from '@/pages/admin/AdminLogin';
 import AdminResetPassword from '@/pages/admin/AdminResetPassword';
+import AdminPanini from '@/pages/admin/AdminPanini';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, isAuthenticated, isAdmin, authError, navigateToLogin } = useAuth();
@@ -49,6 +51,7 @@ const AuthenticatedApp = () => {
         <Route path="/menu" element={<MenuGelati />} />
         <Route path="/promozioni" element={<Promozioni />} />
         <Route path="/prenota" element={<Prenota />} />
+        <Route path="/panini" element={<Panini />} />
       </Route>
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin/reset-password" element={<AdminResetPassword />} />
@@ -63,9 +66,11 @@ const AuthenticatedApp = () => {
       >
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/gelati" element={<AdminGelati />} />
+        <Route path="/admin/panini" element={<AdminPanini />} />
         <Route path="/admin/promozioni" element={<AdminPromozioni />} />
         <Route path="/admin/foto" element={<AdminFoto />} />
         <Route path="/admin/prenotazioni" element={<AdminPrenotazioni />} />
+       
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

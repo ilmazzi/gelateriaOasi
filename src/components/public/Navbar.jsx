@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { IceCreamCone, Menu, X } from "lucide-react";
+import { IceCreamCone, Menu, X, Sandwich, Tag, House, Package } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navLinks = [
-  { label: "Home", path: "/" },
-  { label: "Menu", path: "/menu" },
-  { label: "Promozioni", path: "/promozioni" },
-  { label: "Prenota", path: "/prenota" },
+  { label: "Home", path: "/", icon: House },
+  { label: "Gelati", path: "/menu", icon: IceCreamCone },
+  { label: "Panini", path: "/panini", icon: Sandwich },
+  { label: "Promozioni", path: "/promozioni", icon: Tag },
+  { label: "Prenota", path: "/prenota", icon: Package },
 ];
 
 export default function Navbar() {
@@ -38,7 +39,10 @@ export default function Navbar() {
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                 }`}
               >
-                {link.label}
+                <span className="inline-flex items-center gap-2">
+                  {link.icon ? <link.icon className="w-4 h-4" /> : null}
+                  <span>{link.label}</span>
+                </span>
               </Link>
             ))}
           </div>
@@ -73,7 +77,10 @@ export default function Navbar() {
                       : "text-muted-foreground hover:bg-secondary"
                   }`}
                 >
-                  {link.label}
+                  <span className="inline-flex items-center gap-2">
+                    {link.icon ? <link.icon className="w-4 h-4" /> : null}
+                    <span>{link.label}</span>
+                  </span>
                 </Link>
               ))}
             </div>

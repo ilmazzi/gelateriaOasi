@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import GelatoCard from "@/components/public/GelatoCard";
 import PromoCard from "@/components/public/PromoCard";
 import Recensioni from "@/components/public/Recensioni";
+import PaninoCard from "@/components/public/PaninoCard";
+
 
 export default function Home() {
   const {
@@ -17,6 +19,15 @@ export default function Home() {
   } = useQuery({
     queryKey: ["gelati-evidenza"],
     queryFn: () => base44.entities.Gelato.filter({ in_evidenza: true, disponibile: true }),
+  });
+
+  const {
+    data: panini = [],
+    isLoading: isLoadingPanini,
+    error: errorPanini,
+  } = useQuery({
+    queryKey: ["panini-evidenza"],
+    queryFn: () => base44.entities.Panino.filter({ in_evidenza: true, disponibile: true }),
   });
 
   const {
@@ -148,6 +159,38 @@ export default function Home() {
               <Link to="/menu">
                 <Button variant="outline" size="lg" className="rounded-full px-8 font-body">
                   Vedi Tutti i Gusti
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+        {/* Gelati in Evidenza */}
+        {panini.length > 0 && (
+        <section className="py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <h2 className="font-heading text-3xl sm:text-4xl font-bold mb-3">I Nostri Panini in Evidenza</h2>
+              <p className="text-muted-foreground font-body max-w-md mx-auto">
+                Scopri i nostri panini più amati, preparati ogni giorno con ingredienti freschi.
+              </p>
+            </motion.div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {panini.slice(0, 8).map((panino, i) => (
+                <PaninoCard key={panino.id} panino={panino} index={i} />
+              ))}
+            </div>
+            <div className="text-center mt-10">
+              <Link to="/panini">
+                <Button variant="outline" size="lg" className="rounded-full px-8 font-body">
+                  Vedi Tutti i Panini
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </Link>

@@ -1,6 +1,6 @@
 import React from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { IceCreamCone, LayoutDashboard, Tag, Image, ShoppingBag, ArrowLeft } from "lucide-react";
+import { IceCreamCone, LayoutDashboard, Tag, Image, ShoppingBag, ArrowLeft, Sandwich } from "lucide-react";
 
 const adminLinks = [
   { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
@@ -8,6 +8,7 @@ const adminLinks = [
   { label: "Promozioni", path: "/admin/promozioni", icon: Tag },
   { label: "Foto", path: "/admin/foto", icon: Image },
   { label: "Prenotazioni", path: "/admin/prenotazioni", icon: ShoppingBag },
+  { label: "Panini", path: "/admin/panini", icon: Sandwich },
 ];
 
 export default function AdminLayout() {

@@ -26,6 +26,21 @@ const statoColors = {
   annullata: "bg-destructive/10 text-destructive border-destructive/20",
 };
 
+const extractTipoOrdine = (note) => {
+  if (!note) return null;
+  const match = note.match(/Tipo ordine:\s*(.+)/i);
+  return match?.[1]?.trim() || null;
+};
+
+const cleanNote = (note) => {
+  if (!note) return "";
+  return note
+    .split("\n")
+    .filter((line) => !/^Tipo ordine:\s*/i.test(line.trim()))
+    .join("\n")
+    .trim();
+};
+
 export default function AdminPrenotazioni() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -79,7 +94,10 @@ export default function AdminPrenotazioni() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {prenotazioni.map((p) => (
+          {prenotazioni.map((p) => {
+            const tipoOrdine = extractTipoOrdine(p.note);
+            const userNote = cleanNote(p.note);
+            return (
             <Card key={p.id}>
               <CardContent className="p-4 sm:p-5">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -114,13 +132,14 @@ export default function AdminPrenotazioni() {
                     </div>
 
                     <div className="text-sm">
-                      <span className="font-medium">Gusti:</span> {p.gusti}
+                      <span className="font-medium">Ordine:</span> {p.gusti}
+                      {tipoOrdine && <span className="ml-2 text-muted-foreground">({tipoOrdine})</span>}
                       {p.taglia && <span className="ml-2 text-muted-foreground">({p.taglia})</span>}
                       {p.quantita > 1 && <span className="ml-1 text-muted-foreground">x{p.quantita}</span>}
                     </div>
 
-                    {p.note && (
-                      <p className="text-sm text-muted-foreground italic">"{p.note}"</p>
+                    {userNote && (
+                      <p className="text-sm text-muted-foreground italic">"{userNote}"</p>
                     )}
                   </div>
 
@@ -159,7 +178,8 @@ export default function AdminPrenotazioni() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

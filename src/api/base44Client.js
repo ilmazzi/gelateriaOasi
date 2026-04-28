@@ -2,6 +2,7 @@ import { assertSupabase, supabase } from "@/lib/supabase-client";
 
 const TABLE_MAP = {
   Gelato: "gelati",
+  Panino: "panini",
   Promozione: "promozioni",
   FotoGalleria: "foto_galleria",
   Prenotazione: "prenotazioni",
@@ -178,6 +179,7 @@ const notifyBookingStatusEmail = async (client, booking) => {
 export const base44 = {
   entities: {
     Gelato: makeEntity("Gelato"),
+    Panino: makeEntity("Panino"),
     Promozione: makeEntity("Promozione"),
     FotoGalleria: makeEntity("FotoGalleria"),
     Prenotazione: makeEntity("Prenotazione"),

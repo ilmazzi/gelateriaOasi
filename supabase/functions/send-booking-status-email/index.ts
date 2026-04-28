@@ -55,7 +55,7 @@ const buildStatusHtml = (booking: BookingPayload, statoLabel: string) => `
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;border:1px solid #f1e5ea;border-radius:12px;overflow:hidden;">
           <tr><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#6b5b65;font-size:13px;width:34%;">Data ritiro</td><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#241a1f;font-size:13px;font-weight:600;">${escapeHtml(booking.data_ritiro)}</td></tr>
           <tr><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#6b5b65;font-size:13px;">Ora ritiro</td><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#241a1f;font-size:13px;font-weight:600;">${escapeHtml(booking.ora_ritiro)}</td></tr>
-          <tr><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#6b5b65;font-size:13px;">Gusti</td><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#241a1f;font-size:13px;font-weight:600;">${escapeHtml(booking.gusti)}</td></tr>
+          <tr><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#6b5b65;font-size:13px;">Ordine</td><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#241a1f;font-size:13px;font-weight:600;">${escapeHtml(booking.gusti)}</td></tr>
           <tr><td style="padding:10px 12px;color:#6b5b65;font-size:13px;">Taglia / Quantita</td><td style="padding:10px 12px;color:#241a1f;font-size:13px;font-weight:600;">${escapeHtml(booking.taglia || "-")} / ${escapeHtml(String(booking.quantita ?? 1))}</td></tr>
         </table>
       </div>
@@ -116,7 +116,7 @@ serve(async (req) => {
     const stato = booking.stato || "in_attesa";
     const statoLabel = statoLabels[stato] || stato;
     const subject = `Aggiornamento prenotazione: ${statoLabel}`;
-    const body = `Ciao ${booking.nome_cliente},\nla tua prenotazione e stata aggiornata.\n\nStato: ${statoLabel}\nData ritiro: ${booking.data_ritiro}\nOra ritiro: ${booking.ora_ritiro}\nGusti: ${booking.gusti}\nTaglia: ${booking.taglia || "-"}\nQuantita: ${booking.quantita ?? 1}\n\nGrazie,\nGelateria Oasi`;
+    const body = `Ciao ${booking.nome_cliente},\nla tua prenotazione e stata aggiornata.\n\nStato: ${statoLabel}\nData ritiro: ${booking.data_ritiro}\nOra ritiro: ${booking.ora_ritiro}\nOrdine: ${booking.gusti}\nTaglia: ${booking.taglia || "-"}\nQuantita: ${booking.quantita ?? 1}\n\nGrazie,\nGelateria Oasi`;
 
     await sendBrevoEmail(booking.email, subject, body, buildStatusHtml(booking, statoLabel));
 

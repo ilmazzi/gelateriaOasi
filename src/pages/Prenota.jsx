@@ -25,7 +25,9 @@ const initialForm = {
   email: "",
   data_ritiro: "",
   ora_ritiro: "",
+  tipo_ordine: "gelati",
   gusti: "",
+  panini_items: [],
   taglia: "media",
   quantita: 1,
   note: "",
@@ -42,8 +44,43 @@ export default function Prenota() {
     queryFn: () => base44.entities.Gelato.filter({ disponibile: true }),
   });
 
+  const { data: panini = [] } = useQuery({
+    queryKey: ["panini-disponibili"],
+    queryFn: () => base44.entities.Panino.filter({ disponibile: true }),
+  });
+
   const mutation = useMutation({
-    mutationFn: () => base44.entities.Prenotazione.create(form),
+    mutationFn: () => {
+      const paniniDetails = form.panini_items
+        .map((item) => `${item.nome} x${item.quantita}${item.note ? ` (${item.note})` : ""}`)
+        .join(", ");
+      const tipoLabel =
+        form.tipo_ordine === "panini"
+          ? "Panini"
+          : form.tipo_ordine === "entrambi"
+            ? "Gelati + Panini"
+            : "Gelati";
+      const orderDetails =
+        form.tipo_ordine === "panini"
+          ? `Panini: ${paniniDetails}`
+          : form.tipo_ordine === "entrambi"
+            ? `Gelati: ${form.gusti} | Panini: ${paniniDetails}`
+            : form.gusti;
+
+      const bookingPayload = {
+        nome_cliente: form.nome_cliente,
+        telefono: form.telefono,
+        email: form.email,
+        data_ritiro: form.data_ritiro,
+        ora_ritiro: form.ora_ritiro,
+        gusti: orderDetails,
+        taglia: form.taglia,
+        quantita: form.quantita,
+        note: [form.note, `Tipo ordine: ${tipoLabel}`].filter(Boolean).join("\n"),
+      };
+
+      return base44.entities.Prenotazione.create(bookingPayload);
+    },
     onSuccess: () => {
       setSuccess(true);
       setForm(initialForm);
@@ -59,7 +96,17 @@ export default function Prenota() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.nome_cliente || !form.telefono || !form.data_ritiro || !form.ora_ritiro || !form.gusti) {
+    const needsGelati = form.tipo_ordine === "gelati" || form.tipo_ordine === "entrambi";
+    const needsPanini = form.tipo_ordine === "panini" || form.tipo_ordine === "entrambi";
+
+    if (
+      !form.nome_cliente ||
+      !form.telefono ||
+      !form.data_ritiro ||
+      !form.ora_ritiro ||
+      (needsGelati && !form.gusti) ||
+      (needsPanini && form.panini_items.length === 0)
+    ) {
       toast({ title: "Campi obbligatori", description: "Compila tutti i campi obbligatori.", variant: "destructive" });
       return;
     }
@@ -68,6 +115,31 @@ export default function Prenota() {
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const togglePaninoSelection = (panino) => {
+    setForm((prev) => {
+      const exists = prev.panini_items.some((item) => item.id === panino.id);
+      if (exists) {
+        return {
+          ...prev,
+          panini_items: prev.panini_items.filter((item) => item.id !== panino.id),
+        };
+      }
+      return {
+        ...prev,
+        panini_items: [...prev.panini_items, { id: panino.id, nome: panino.nome, quantita: 1, note: "" }],
+      };
+    });
+  };
+
+  const updatePaninoItem = (id, field, value) => {
+    setForm((prev) => ({
+      ...prev,
+      panini_items: prev.panini_items.map((item) =>
+        item.id === id ? { ...item, [field]: value } : item,
+      ),
+    }));
   };
 
   const today = new Date().toISOString().split("T")[0];
@@ -104,7 +176,7 @@ export default function Prenota() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center"
           >
-            <h1 className="font-heading text-4xl sm:text-5xl font-bold mb-3">Prenota il tuo Gelato</h1>
+            <h1 className="font-heading text-4xl sm:text-5xl font-bold mb-3">Prenota il tuo Ordine</h1>
             <p className="text-muted-foreground font-body max-w-md mx-auto">
               Ordina in anticipo e ritira senza attesa.
             </p>
@@ -212,46 +284,139 @@ export default function Prenota() {
             </div>
 
             <div className="space-y-2">
-              <Label className="font-body text-sm">Gusti Desiderati *</Label>
-              {gelati.length > 0 ? (
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {gelati.map((g) => {
-                    const selected = form.gusti.includes(g.nome);
-                    return (
-                      <button
-                        type="button"
-                        key={g.id}
-                        onClick={() => {
-                          const current = form.gusti ? form.gusti.split(", ").filter(Boolean) : [];
-                          const updated = selected
-                            ? current.filter((n) => n !== g.nome)
-                            : [...current, g.nome];
-                          handleChange("gusti", updated.join(", "));
-                        }}
-                        className={`px-3 py-1.5 rounded-full text-sm font-body transition-all border ${
-                          selected
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-secondary border-border text-foreground hover:border-primary/50"
-                        }`}
-                      >
-                        {g.nome}
-                      </button>
-                    );
-                  })}
-                </div>
+              <Label className="font-body text-sm">Cosa vuoi ordinare? *</Label>
+              {isMobile ? (
+                <NativeSelect
+                  className="w-full rounded-lg font-body"
+                  value={form.tipo_ordine}
+                  onChange={(e) => handleChange("tipo_ordine", e.target.value)}
+                >
+                  <NativeSelectOption className="" value="gelati">Solo gelati</NativeSelectOption>
+                  <NativeSelectOption className="" value="panini">Solo panini</NativeSelectOption>
+                  <NativeSelectOption className="" value="entrambi">Gelati + panini</NativeSelectOption>
+                </NativeSelect>
               ) : (
-                <Input
-                  type="text"
-                  value={form.gusti}
-                  onChange={(e) => handleChange("gusti", e.target.value)}
-                  placeholder="Es. Pistacchio, Cioccolato, Fragola"
-                  className="rounded-lg font-body"
-                />
+                <Select value={form.tipo_ordine} onValueChange={(v) => handleChange("tipo_ordine", v)}>
+                  <SelectTrigger className="rounded-lg font-body">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="">
+                    <SelectItem className="" value="gelati">Solo gelati</SelectItem>
+                    <SelectItem className="" value="panini">Solo panini</SelectItem>
+                    <SelectItem className="" value="entrambi">Gelati + panini</SelectItem>
+                  </SelectContent>
+                </Select>
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {(form.tipo_ordine === "gelati" || form.tipo_ordine === "entrambi") && (
               <div className="space-y-2">
+                <Label className="font-body text-sm">Gusti Gelato *</Label>
+                {gelati.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {gelati.map((g) => {
+                      const selected = form.gusti.includes(g.nome);
+                      return (
+                        <button
+                          type="button"
+                          key={g.id}
+                          onClick={() => {
+                            const current = form.gusti ? form.gusti.split(", ").filter(Boolean) : [];
+                            const updated = selected
+                              ? current.filter((n) => n !== g.nome)
+                              : [...current, g.nome];
+                            handleChange("gusti", updated.join(", "));
+                          }}
+                          className={`px-3 py-1.5 rounded-full text-sm font-body transition-all border ${
+                            selected
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-secondary border-border text-foreground hover:border-primary/50"
+                          }`}
+                        >
+                          {g.nome}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <Input
+                    type="text"
+                    value={form.gusti}
+                    onChange={(e) => handleChange("gusti", e.target.value)}
+                    placeholder="Es. Pistacchio, Cioccolato, Fragola"
+                    className="rounded-lg font-body"
+                  />
+                )}
+              </div>
+            )}
+
+            {(form.tipo_ordine === "panini" || form.tipo_ordine === "entrambi") && (
+              <div className="space-y-2">
+                <Label className="font-body text-sm">Panini Desiderati *</Label>
+                {panini.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {panini.map((p) => {
+                      const selected = form.panini_items.some((item) => item.id === p.id);
+                      return (
+                        <button
+                          type="button"
+                          key={p.id}
+                          onClick={() => togglePaninoSelection(p)}
+                          className={`px-3 py-1.5 rounded-full text-sm font-body transition-all border ${
+                            selected
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-secondary border-border text-foreground hover:border-primary/50"
+                          }`}
+                        >
+                          {p.nome}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <Input
+                    type="text"
+                    value=""
+                    onChange={() => {}}
+                    placeholder="Es. Toast prosciutto e formaggio, Panino tonno"
+                    className="rounded-lg font-body"
+                    disabled
+                  />
+                )}
+                {form.panini_items.length > 0 && (
+                  <div className="space-y-3 rounded-lg border border-border p-3">
+                    {form.panini_items.map((item) => (
+                      <div key={item.id} className="space-y-2 rounded-md bg-secondary/40 p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-medium">{item.nome}</p>
+                          <div className="flex items-center gap-2">
+                            <Label className="text-xs text-muted-foreground">Qta</Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={20}
+                              value={item.quantita}
+                              onChange={(e) => updatePaninoItem(item.id, "quantita", Math.max(1, parseInt(e.target.value, 10) || 1))}
+                              className="h-8 w-20 rounded-md"
+                            />
+                          </div>
+                        </div>
+                        <Textarea
+                          value={item.note}
+                          onChange={(e) => updatePaninoItem(item.id, "note", e.target.value)}
+                          placeholder="Modifiche ingredienti (es. senza pomodoro, extra formaggio)"
+                          className="rounded-md text-sm"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className={`grid grid-cols-1 gap-4 ${form.tipo_ordine === "panini" ? "sm:grid-cols-1" : "sm:grid-cols-2"}`}>
+              {form.tipo_ordine !== "panini" && (
+                <div className="space-y-2">
                 <Label className="font-body text-sm">Dimensione Vaschetta</Label>
                 {isMobile ? (
                   <NativeSelect
@@ -285,6 +450,7 @@ export default function Prenota() {
                   </div>
                 </div>
               </div>
+              )}
               <div className="space-y-2">
                 <Label className="font-body text-sm">Quantità</Label>
                 <Input

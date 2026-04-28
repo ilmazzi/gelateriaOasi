@@ -23,7 +23,7 @@ Telefono: ${booking.telefono}
 Email: ${booking.email || "-"}
 Data ritiro: ${booking.data_ritiro}
 Ora ritiro: ${booking.ora_ritiro}
-Gusti: ${booking.gusti}
+Ordine: ${booking.gusti}
 Taglia: ${booking.taglia || "-"}
 Quantita: ${booking.quantita ?? 1}
 Note: ${booking.note || "-"}
@@ -43,7 +43,7 @@ const bookingRows = (booking: BookingPayload) => [
   ["Email", booking.email || "-"],
   ["Data ritiro", booking.data_ritiro],
   ["Ora ritiro", booking.ora_ritiro],
-  ["Gusti", booking.gusti],
+  ["Ordine", booking.gusti],
   ["Taglia", booking.taglia || "-"],
   ["Quantita", String(booking.quantita ?? 1)],
   ["Note", booking.note || "-"],
