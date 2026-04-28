@@ -47,13 +47,13 @@ export default function MenuGelati() {
       {/* Filters */}
       <section className="pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center">
-          <Tabs value={categoria} onValueChange={setCategoria}>
-            <TabsList className="bg-secondary flex-wrap h-auto gap-1 p-1">
+          <Tabs value={categoria} onValueChange={setCategoria} className="w-full">
+            <TabsList className="w-full bg-secondary group-data-horizontal/tabs:h-auto grid grid-cols-2 sm:grid-cols-3 md:flex md:justify-center gap-1 p-1 relative z-10">
               {categorie.map((c) => (
                 <TabsTrigger
                   key={c.value}
                   value={c.value}
-                  className="rounded-full px-4 text-sm font-body"
+                  className="rounded-full px-4 text-sm font-body w-full"
                 >
                   {c.label}
                 </TabsTrigger>

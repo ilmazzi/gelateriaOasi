@@ -47,47 +47,60 @@ export default function Home() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative h-[85vh] min-h-[600px] flex items-center overflow-hidden">
-        <div className="absolute inset-0">
+      <section className="relative h-[85vh] min-h-[600px] md:h-auto md:min-h-[680px] flex items-center overflow-hidden">
+        <div className="absolute inset-0 md:hidden">
           <img
-            src="https://media.base44.com/images/public/69f08e145cf272361c5bae33/a1b2a4602_generated_a0a69c1e.png"
+            src="/hero-oasi.png"
             alt="Bar Gelateria L'Oasi"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-transparent" />
+          <div className="absolute inset-0 bg-black/35" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/85 to-background/30 sm:to-transparent" />
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="max-w-xl"
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <Star className="w-4 h-4 text-accent fill-accent" />
-              <span className="text-sm font-body font-medium text-muted-foreground">Gelato Artigianale dal 1985</span>
+          <div className="grid md:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="max-w-xl"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Star className="w-4 h-4 text-accent fill-accent" />
+                <span className="text-sm font-body font-medium text-muted-foreground">Gelato Artigianale dal 1985</span>
+              </div>
+              <h1 className="font-heading text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight mb-6">
+                Il gusto della
+                <span className="text-primary"> tradizione</span>
+              </h1>
+              <p className="text-lg text-muted-foreground font-body leading-relaxed mb-8 max-w-md">
+                Ogni gusto è un viaggio tra sapori autentici, ingredienti freschi e la passione per il gelato artigianale italiano.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link to="/menu">
+                  <Button size="lg" className="rounded-full px-8 font-body">
+                    Scopri i Gusti
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </Link>
+                <Link to="/prenota">
+                  <Button size="lg" variant="outline" className="rounded-full px-8 font-body">
+                    Prenota Online
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+
+            <div className="hidden md:flex justify-end">
+              <div className="w-full max-w-md lg:max-w-lg h-[560px] rounded-3xl overflow-hidden border border-border/40 shadow-2xl">
+                <img
+                  src="/hero-oasi.png"
+                  alt="Bar Gelateria L'Oasi"
+                  className="w-full h-full object-cover object-center"
+                />
+              </div>
             </div>
-            <h1 className="font-heading text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight mb-6">
-              Il gusto della
-              <span className="text-primary"> tradizione</span>
-            </h1>
-            <p className="text-lg text-muted-foreground font-body leading-relaxed mb-8 max-w-md">
-              Ogni gusto è un viaggio tra sapori autentici, ingredienti freschi e la passione per il gelato artigianale italiano.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link to="/menu">
-                <Button size="lg" className="rounded-full px-8 font-body">
-                  Scopri i Gusti
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </Link>
-              <Link to="/prenota">
-                <Button size="lg" variant="outline" className="rounded-full px-8 font-body">
-                  Prenota Online
-                </Button>
-              </Link>
-            </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
