@@ -77,7 +77,22 @@ const makeEntity = (entityName) => {
             ? { stato: "in_attesa", ...payload }
             : payload;
         const result = await client.from(table).insert(dataToInsert).select().single();
-        return normalizeRow(ensureOk(result, `Creazione ${table}`));
+        const record = normalizeRow(ensureOk(result, `Creazione ${table}`));
+
+        if (entityName === "Prenotazione") {
+          try {
+            await notifyBookingEmails(client, record);
+            return { ...record, _emailSent: true };
+          } catch (error) {
+            return {
+              ...record,
+              _emailSent: false,
+              _emailError: error.message || "Invio email non riuscito",
+            };
+          }
+        }
+
+        return record;
       });
     },
 
@@ -114,6 +129,16 @@ const resolveLoginRedirect = (redirectTo) => {
     return new URL(redirectTo, window.location.origin).toString();
   } catch {
     return window.location.origin;
+  }
+};
+
+const notifyBookingEmails = async (client, booking) => {
+  const { error } = await client.functions.invoke("send-booking-emails", {
+    body: { booking },
+  });
+
+  if (error) {
+    throw new Error(`Invio email fallito: ${error.message}`);
   }
 };
 

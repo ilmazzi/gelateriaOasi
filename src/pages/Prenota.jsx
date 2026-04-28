@@ -41,9 +41,16 @@ export default function Prenota() {
 
   const mutation = useMutation({
     mutationFn: (data) => base44.entities.Prenotazione.create(data),
-    onSuccess: () => {
+    onSuccess: (result) => {
       setSuccess(true);
       setForm(initialForm);
+      if (result?._emailSent === false) {
+        toast({
+          title: "Prenotazione registrata",
+          description: `Attenzione: ${result._emailError || "email non inviata"}`,
+          variant: "destructive",
+        });
+      }
     },
     onError: (error) => {
       toast({

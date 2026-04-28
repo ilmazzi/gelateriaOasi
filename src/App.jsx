@@ -18,6 +18,7 @@ import AdminPromozioni from '@/pages/admin/AdminPromozioni';
 import AdminFoto from '@/pages/admin/AdminFoto';
 import AdminPrenotazioni from '@/pages/admin/AdminPrenotazioni';
 import AdminLogin from '@/pages/admin/AdminLogin';
+import AdminResetPassword from '@/pages/admin/AdminResetPassword';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, isAuthenticated, isAdmin, authError, navigateToLogin } = useAuth();
@@ -48,6 +49,7 @@ const AuthenticatedApp = () => {
         <Route path="/prenota" element={<Prenota />} />
       </Route>
       <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin/reset-password" element={<AdminResetPassword />} />
       <Route
         element={
           isAuthenticated && isAdmin ? (

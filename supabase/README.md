@@ -21,3 +21,17 @@ Execute, in order:
 - Use the same schema files for both local and cloud.
 - For local development, start a local Supabase stack with Supabase CLI and run the same SQL files.
 - Keep env vars in `.env.local` and switch between local/cloud by changing URL + anon key.
+
+## 4) Booking emails (cliente + gelateria)
+
+Deploy edge function:
+
+1. `supabase functions deploy send-booking-emails`
+2. Set secrets:
+   - `supabase secrets set RESEND_API_KEY=...`
+   - `supabase secrets set BOOKING_FROM_EMAIL='Gelateria Oasi <no-reply@tuodominio.it>'`
+   - `supabase secrets set GELATERIA_BOOKING_EMAIL='prenotazioni@tuodominio.it'`
+
+When a booking is created from `Prenota`, the app invokes this function and sends:
+- one email to gelateria
+- one confirmation email to cliente (if email is provided)

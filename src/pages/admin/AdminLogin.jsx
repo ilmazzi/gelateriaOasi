@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -91,6 +91,39 @@ export default function AdminLogin() {
     }
   };
 
+  const handlePasswordReset = async () => {
+    if (!email) {
+      toast({
+        title: "Inserisci email",
+        description: "Per resettare la password devi prima inserire l'email.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSendingMagicLink(true);
+      const supabase = assertSupabase();
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/admin/reset-password`,
+      });
+      if (error) throw error;
+
+      toast({
+        title: "Controlla la tua email",
+        description: "Ti abbiamo inviato il link per reimpostare la password.",
+      });
+    } catch (error) {
+      toast({
+        title: "Reset non riuscito",
+        description: error.message || "Verifica configurazione Supabase e riprova.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingMagicLink(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-background">
       <Card className="w-full max-w-md">
@@ -129,6 +162,14 @@ export default function AdminLogin() {
               <Button className="w-full" type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Accesso in corso..." : "Accedi"}
               </Button>
+              <button
+                type="button"
+                onClick={handlePasswordReset}
+                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors underline"
+                disabled={isSendingMagicLink}
+              >
+                Password dimenticata?
+              </button>
               <Button
                 className="w-full"
                 type="button"
@@ -138,6 +179,12 @@ export default function AdminLogin() {
               >
                 {isSendingMagicLink ? "Invio link..." : "Usa link magico"}
               </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                Hai ricevuto un link di recupero? Aprilo e completa il reset in{" "}
+                <Link to="/admin/reset-password" className="underline">
+                  questa pagina
+                </Link>.
+              </p>
             </form>
           )}
         </CardContent>
