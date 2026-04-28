@@ -29,25 +29,30 @@ Quantita: ${booking.quantita ?? 1}
 Note: ${booking.note || "-"}
 `;
 
-const sendResendEmail = async (to: string, subject: string, text: string) => {
-  const resendApiKey = Deno.env.get("RESEND_API_KEY");
+const sendBrevoEmail = async (to: string, subject: string, text: string) => {
+  const brevoApiKey = Deno.env.get("BREVO_API_KEY");
   const fromEmail = Deno.env.get("BOOKING_FROM_EMAIL");
 
-  if (!resendApiKey || !fromEmail) {
-    throw new Error("Config email mancante: imposta RESEND_API_KEY e BOOKING_FROM_EMAIL");
+  if (!brevoApiKey || !fromEmail) {
+    throw new Error("Config email mancante: imposta BREVO_API_KEY e BOOKING_FROM_EMAIL");
   }
 
-  const response = await fetch("https://api.resend.com/emails", {
+  const senderMatch = fromEmail.match(/^(.*)<(.+)>$/);
+  const sender = senderMatch
+    ? { name: senderMatch[1].trim().replace(/^"|"$/g, ""), email: senderMatch[2].trim() }
+    : { name: "Gelateria Oasi", email: fromEmail.trim() };
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${resendApiKey}`,
+      "api-key": brevoApiKey,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: fromEmail,
-      to: [to],
+      sender,
+      to: [{ email: to }],
       subject,
-      text,
+      textContent: text,
     }),
   });
 
@@ -78,14 +83,14 @@ serve(async (req) => {
 
     const details = formatBookingDetails(booking);
 
-    await sendResendEmail(
+    await sendBrevoEmail(
       gelateriaEmail,
       `Nuova prenotazione - ${booking.nome_cliente}`,
       `Hai ricevuto una nuova prenotazione.\n\n${details}`,
     );
 
     if (booking.email) {
-      await sendResendEmail(
+      await sendBrevoEmail(
         booking.email,
         "Conferma ricezione prenotazione - Gelateria Oasi",
         `Ciao ${booking.nome_cliente},\nabbiamo ricevuto la tua prenotazione.\n\n${details}\nTi ricontatteremo al piu presto.`,

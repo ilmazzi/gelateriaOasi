@@ -28,7 +28,7 @@ Deploy edge function:
 
 1. `supabase functions deploy send-booking-emails`
 2. Set secrets:
-   - `supabase secrets set RESEND_API_KEY=...`
+   - `supabase secrets set BREVO_API_KEY=...`
    - `supabase secrets set BOOKING_FROM_EMAIL='Gelateria Oasi <no-reply@tuodominio.it>'`
    - `supabase secrets set GELATERIA_BOOKING_EMAIL='prenotazioni@tuodominio.it'`
 
