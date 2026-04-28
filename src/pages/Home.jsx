@@ -55,7 +55,7 @@ export default function Home() {
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-black/35" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/85 to-background/30 sm:to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/85 to-background/30 sm:to-transparent" />
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="grid md:grid-cols-2 gap-10 lg:gap-16 items-center">
@@ -73,7 +73,7 @@ export default function Home() {
                 Il gusto della
                 <span className="text-primary"> tradizione</span>
               </h1>
-              <p className="text-lg text-muted-foreground font-body leading-relaxed mb-8 max-w-md">
+              <p className="text-lg  font-body leading-relaxed mb-8 max-w-md">
                 Ogni gusto è un viaggio tra sapori autentici, ingredienti freschi e la passione per il gelato artigianale italiano.
               </p>
               <div className="flex flex-wrap gap-3">
