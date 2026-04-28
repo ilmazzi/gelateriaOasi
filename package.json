@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+  "build": "vite build",
+  "start": "serve -s dist -l tcp://0.0.0.0:$PORT",
+  "lint": "eslint .",
+  "preview": "vite preview"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
