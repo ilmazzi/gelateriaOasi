@@ -24,8 +24,8 @@ const statoLabels: Record<string, string> = {
   annullata: "Annullata",
 };
 
-const escapeHtml = (value: string) =>
-  value
+const escapeHtml = (value: unknown) =>
+  String(value ?? "-")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")

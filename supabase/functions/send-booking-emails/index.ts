@@ -29,8 +29,8 @@ Quantita: ${booking.quantita ?? 1}
 Note: ${booking.note || "-"}
 `;
 
-const escapeHtml = (value: string) =>
-  value
+const escapeHtml = (value: unknown) =>
+  String(value ?? "-")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
