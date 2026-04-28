@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { useToast } from "@/components/ui/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { CheckCircle, Clock, ShoppingBag, Info } from "lucide-react";
 
 const orari = [
@@ -33,6 +35,7 @@ export default function Prenota() {
   const [form, setForm] = useState(initialForm);
   const [success, setSuccess] = useState(false);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const { data: gelati = [] } = useQuery({
     queryKey: ["gelati-disponibili"],
@@ -40,17 +43,10 @@ export default function Prenota() {
   });
 
   const mutation = useMutation({
-    mutationFn: (data) => base44.entities.Prenotazione.create(data),
-    onSuccess: (result) => {
+    mutationFn: () => base44.entities.Prenotazione.create(form),
+    onSuccess: () => {
       setSuccess(true);
       setForm(initialForm);
-      if (result?._emailSent === false) {
-        toast({
-          title: "Prenotazione registrata",
-          description: `Attenzione: ${result._emailError || "email non inviata"}`,
-          variant: "destructive",
-        });
-      }
     },
     onError: (error) => {
       toast({
@@ -67,7 +63,7 @@ export default function Prenota() {
       toast({ title: "Campi obbligatori", description: "Compila tutti i campi obbligatori.", variant: "destructive" });
       return;
     }
-    mutation.mutate(form);
+    mutation.mutate();
   };
 
   const handleChange = (field, value) => {
@@ -134,6 +130,7 @@ export default function Prenota() {
               <div className="space-y-2">
                 <Label className="font-body text-sm">Nome *</Label>
                 <Input
+                  type="text"
                   value={form.nome_cliente}
                   onChange={(e) => handleChange("nome_cliente", e.target.value)}
                   placeholder="Mario Rossi"
@@ -143,6 +140,7 @@ export default function Prenota() {
               <div className="space-y-2">
                 <Label className="font-body text-sm">Telefono *</Label>
                 <Input
+                  type="tel"
                   value={form.telefono}
                   onChange={(e) => handleChange("telefono", e.target.value)}
                   placeholder="+39 333 1234567"
@@ -180,16 +178,31 @@ export default function Prenota() {
               </div>
               <div className="space-y-2">
                 <Label className="font-body text-sm">Ora Ritiro *</Label>
-                <Select value={form.ora_ritiro} onValueChange={(v) => handleChange("ora_ritiro", v)}>
-                  <SelectTrigger className="rounded-lg font-body">
-                    <SelectValue placeholder="Seleziona orario" />
-                  </SelectTrigger>
-                  <SelectContent>
+                {isMobile ? (
+                  <NativeSelect
+                    className="w-full rounded-lg font-body"
+                    value={form.ora_ritiro}
+                    onChange={(e) => handleChange("ora_ritiro", e.target.value)}
+                  >
+                    <NativeSelectOption className="" value="">Seleziona orario</NativeSelectOption>
                     {orari.map((o) => (
-                      <SelectItem key={o} value={o}>{o}</SelectItem>
+                      <NativeSelectOption className="" key={o} value={o}>
+                        {o}
+                      </NativeSelectOption>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </NativeSelect>
+                ) : (
+                  <Select value={form.ora_ritiro} onValueChange={(v) => handleChange("ora_ritiro", v)}>
+                    <SelectTrigger className="rounded-lg font-body">
+                      <SelectValue placeholder="Seleziona orario" />
+                    </SelectTrigger>
+                    <SelectContent className="">
+                      {orari.map((o) => (
+                        <SelectItem className="" key={o} value={o}>{o}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
 
@@ -228,6 +241,7 @@ export default function Prenota() {
                 </div>
               ) : (
                 <Input
+                  type="text"
                   value={form.gusti}
                   onChange={(e) => handleChange("gusti", e.target.value)}
                   placeholder="Es. Pistacchio, Cioccolato, Fragola"
@@ -239,16 +253,28 @@ export default function Prenota() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="font-body text-sm">Dimensione Vaschetta</Label>
-                <Select value={form.taglia} onValueChange={(v) => handleChange("taglia", v)}>
-                  <SelectTrigger className="rounded-lg font-body">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="piccola">Piccola</SelectItem>
-                    <SelectItem value="media">Media</SelectItem>
-                    <SelectItem value="grande">Grande</SelectItem>
-                  </SelectContent>
-                </Select>
+                {isMobile ? (
+                  <NativeSelect
+                    className="w-full rounded-lg font-body"
+                    value={form.taglia}
+                    onChange={(e) => handleChange("taglia", e.target.value)}
+                  >
+                    <NativeSelectOption className="" value="piccola">Piccola</NativeSelectOption>
+                    <NativeSelectOption className="" value="media">Media</NativeSelectOption>
+                    <NativeSelectOption className="" value="grande">Grande</NativeSelectOption>
+                  </NativeSelect>
+                ) : (
+                  <Select value={form.taglia} onValueChange={(v) => handleChange("taglia", v)}>
+                    <SelectTrigger className="rounded-lg font-body">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="">
+                      <SelectItem className="" value="piccola">Piccola</SelectItem>
+                      <SelectItem className="" value="media">Media</SelectItem>
+                      <SelectItem className="" value="grande">Grande</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
                 {/* Tooltip dimensioni */}
                 <div className="flex items-start gap-2 bg-accent/10 border border-accent/20 rounded-lg px-3 py-2.5 mt-1">
                   <Info className="w-4 h-4 text-accent-foreground mt-0.5 flex-shrink-0" />

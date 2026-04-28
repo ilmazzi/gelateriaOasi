@@ -5,6 +5,8 @@ import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-d
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import ScrollToTop from '@/components/ScrollToTop';
+import AppErrorBoundary from '@/components/AppErrorBoundary';
 
 import PublicLayout from '@/components/public/PublicLayout';
 import Home from '@/pages/Home';
@@ -75,7 +77,10 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <AuthenticatedApp />
+          <ScrollToTop />
+          <AppErrorBoundary>
+            <AuthenticatedApp />
+          </AppErrorBoundary>
         </Router>
         <Toaster />
       </QueryClientProvider>
