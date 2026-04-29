@@ -6,6 +6,7 @@ const TABLE_MAP = {
   Promozione: "promozioni",
   FotoGalleria: "foto_galleria",
   Prenotazione: "prenotazioni",
+  Negozio: "negozio",
 };
 
 const normalizeRow = (row) => ({
@@ -183,6 +184,7 @@ export const base44 = {
     Promozione: makeEntity("Promozione"),
     FotoGalleria: makeEntity("FotoGalleria"),
     Prenotazione: makeEntity("Prenotazione"),
+    Negozio: makeEntity("Negozio"),
   },
   integrations: {
     Core: {

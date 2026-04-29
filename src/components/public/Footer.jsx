@@ -1,7 +1,16 @@
 import { IceCreamCone, MapPin, Phone, Clock, Camera, CircleUserRound } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 
 export default function Footer() {
+  const { data: negozio = [] } = useQuery({
+    queryKey: ["negozio-public"],
+    queryFn: () => base44.entities.Negozio.list(),
+  });
+
+  const info = negozio?.[0] || {};
+
   return (
     <footer className="bg-card border-t border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -9,10 +18,13 @@ export default function Footer() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <IceCreamCone className="w-6 h-6 text-primary" />
-              <span className="font-heading text-lg font-bold">Bar GelateriaL'Oasi</span>
+              <span className="font-heading text-lg font-bold">
+                {info.nome || "Bar Gelateria L'Oasi"}
+              </span>
             </div>
             <p className="text-sm text-muted-foreground font-body leading-relaxed">
-              Gelato artigianale fatto con passione, ingredienti freschi e ricette della tradizione italiana.
+              {info.descrizione ||
+                "Gelato artigianale fatto con passione, ingredienti freschi e ricette della tradizione italiana."}
             </p>
           </div>
 
@@ -21,15 +33,15 @@ export default function Footer() {
             <div className="space-y-3 text-sm text-muted-foreground font-body">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-primary" />
-                <span>Via A.Manzoni, 16, 23868,</span>
+                <span>{info.indirizzo || "Via A. Manzoni, 16, 23868"}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-primary" />
-                <span>+39 0341 580332</span>
+                <span>{info.telefono || "+39 0341 580332"}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-primary" />
-                <span>Lun - Dom: 10:00 - 23:00</span>
+                <span>{info.orari || "Lun - Dom: 10:00 - 23:00"}</span>
               </div>
             </div>
           </div>

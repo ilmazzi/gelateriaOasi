@@ -12,6 +12,14 @@ import PaninoCard from "@/components/public/PaninoCard";
 
 
 export default function Home() {
+  const { data: negozio = [] } = useQuery({
+    queryKey: ["negozio-public"],
+    queryFn: () => base44.entities.Negozio.list(),
+  });
+
+  const infoNegozio = negozio?.[0] || {};
+  const heroImage = infoNegozio.foto || "/hero-oasi.png";
+
   const {
     data: gelati = [],
     isLoading: isLoadingGelati,
@@ -61,7 +69,7 @@ export default function Home() {
       <section className="relative h-[85vh] min-h-[600px] md:h-auto md:min-h-[680px] flex items-center overflow-hidden">
         <div className="absolute inset-0 md:hidden">
           <img
-            src="/hero-oasi.png"
+            src={heroImage}
             alt="Bar Gelateria L'Oasi"
             className="w-full h-full object-cover"
           />
@@ -105,7 +113,7 @@ export default function Home() {
             <div className="hidden md:flex justify-end">
               <div className="w-full max-w-md lg:max-w-lg h-[560px] rounded-3xl overflow-hidden border border-border/40 shadow-2xl">
                 <img
-                  src="/hero-oasi.png"
+                  src={heroImage}
                   alt="Bar Gelateria L'Oasi"
                   className="w-full h-full object-cover object-center"
                 />
@@ -125,11 +133,15 @@ export default function Home() {
             </div>
             <div className="flex items-center justify-center gap-3">
               <Clock className="w-5 h-5 text-primary" />
-              <span className="text-sm font-body font-medium">Aperto 10:00 - 23:00</span>
+              <span className="text-sm font-body font-medium">
+                {infoNegozio.orari || "Aperto 10:00 - 23:00"}
+              </span>
             </div>
             <div className="flex items-center justify-center gap-3">
               <MapPin className="w-5 h-5 text-primary" />
-              <span className="text-sm font-body font-medium">Via Manzoni 16, Valmadrera</span>
+              <span className="text-sm font-body font-medium">
+                {infoNegozio.indirizzo || "Via Manzoni 16, Valmadrera"}
+              </span>
             </div>
           </div>
         </div>
