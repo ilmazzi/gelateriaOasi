@@ -1,5 +1,5 @@
 import { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { base44 } from '@/api/base44Client';
+import { apiClient } from '@/api/apiClient.js';
 import { assertSupabase, isSupabaseConfigured } from '@/lib/supabase-client';
 
 const AuthContext = createContext(null);
@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }) => {
   const checkUserAuth = useCallback(async () => {
     try {
       setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
+      const currentUser = await apiClient.auth.me();
       setUser(currentUser ?? null);
       setIsAuthenticated(Boolean(currentUser));
       await loadUserRole(currentUser?.id);
@@ -92,18 +92,18 @@ export const AuthProvider = ({ children }) => {
     setRole('guest');
     
     if (shouldRedirect) {
-      base44.auth.logout(window.location.href);
+      apiClient.auth.logout(window.location.href);
     } else {
-      base44.auth.logout();
+      apiClient.auth.logout();
     }
   };
 
   const navigateToLogin = () => {
-    base44.auth.redirectToLogin(window.location.href);
+    apiClient.auth.redirectToLogin(window.location.href);
   };
 
   useEffect(() => {
-    const { data } = base44.auth.onAuthStateChange((_event, session) => {
+    const { data } = apiClient.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser(session.user);
         setIsAuthenticated(true);

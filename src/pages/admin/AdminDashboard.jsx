@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient.js";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IceCreamCone, Tag, ShoppingBag, Image, TrendingUp } from "lucide-react";
@@ -7,22 +7,22 @@ import { IceCreamCone, Tag, ShoppingBag, Image, TrendingUp } from "lucide-react"
 export default function AdminDashboard() {
   const { data: gelati = [] } = useQuery({
     queryKey: ["admin-gelati"],
-    queryFn: () => base44.entities.Gelato.list(),
+    queryFn: () => apiClient.entities.Gelato.list(),
   });
 
   const { data: promozioni = [] } = useQuery({
     queryKey: ["admin-promo"],
-    queryFn: () => base44.entities.Promozione.list(),
+    queryFn: () => apiClient.entities.Promozione.list(),
   });
 
   const { data: prenotazioni = [] } = useQuery({
     queryKey: ["admin-prenotazioni"],
-    queryFn: () => base44.entities.Prenotazione.list("-created_date", 50),
+    queryFn: () => apiClient.entities.Prenotazione.list("-created_date", 50),
   });
 
   const { data: foto = [] } = useQuery({
     queryKey: ["admin-foto"],
-    queryFn: () => base44.entities.FotoGalleria.list(),
+    queryFn: () => apiClient.entities.FotoGalleria.list(),
   });
 
   const inAttesa = prenotazioni.filter((p) => p.stato === "in_attesa").length;

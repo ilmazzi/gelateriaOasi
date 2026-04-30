@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient.js";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,11 +18,11 @@ export default function AdminFoto() {
 
   const { data: foto = [], isLoading } = useQuery({
     queryKey: ["admin-foto"],
-    queryFn: () => base44.entities.FotoGalleria.list(),
+    queryFn: () => apiClient.entities.FotoGalleria.list(),
   });
 
   const createMut = useMutation({
-    mutationFn: (d) => base44.entities.FotoGalleria.create(d),
+    mutationFn: (d) => apiClient.entities.FotoGalleria.create(d),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-foto"] });
       setDialogOpen(false);
@@ -34,7 +34,7 @@ export default function AdminFoto() {
   });
 
   const deleteMut = useMutation({
-    mutationFn: (id) => base44.entities.FotoGalleria.delete(id),
+    mutationFn: (id) => apiClient.entities.FotoGalleria.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-foto"] }),
     onError: (error) => {
       toast({ title: "Errore eliminazione", description: error.message || "Operazione non riuscita", variant: "destructive" });
@@ -42,7 +42,7 @@ export default function AdminFoto() {
   });
 
   const toggleEvidenza = useMutation({
-    mutationFn: ({ id, val }) => base44.entities.FotoGalleria.update(id, { in_evidenza: val }),
+    mutationFn: ({ id, val }) => apiClient.entities.FotoGalleria.update(id, { in_evidenza: val }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-foto"] }),
     onError: (error) => {
       toast({ title: "Errore aggiornamento", description: error.message || "Verifica ruolo admin/policy", variant: "destructive" });
@@ -53,7 +53,7 @@ export default function AdminFoto() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const { file_url } = await apiClient.integrations.Core.UploadFile({ file });
     setForm((prev) => ({ ...prev, foto_url: file_url }));
     setUploading(false);
   };

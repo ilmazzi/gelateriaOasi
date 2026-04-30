@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient.js";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ const initialForm = {
   tipo_ordine: "gelati",
   gusti: "",
   panini_items: [],
-  taglia: "media",
+  vaschetta_id: "",
   quantita: 1,
   note: "",
 };
@@ -41,13 +41,49 @@ export default function Prenota() {
 
   const { data: gelati = [] } = useQuery({
     queryKey: ["gelati-disponibili"],
-    queryFn: () => base44.entities.Gelato.filter({ disponibile: true }),
+    queryFn: () => apiClient.entities.Gelato.filter({ disponibile: true }),
   });
 
   const { data: panini = [] } = useQuery({
     queryKey: ["panini-disponibili"],
-    queryFn: () => base44.entities.Panino.filter({ disponibile: true }),
+    queryFn: () => apiClient.entities.Panino.filter({ disponibile: true }),
   });
+
+  const { data: vaschette = [] } = useQuery({
+    queryKey: ["vaschette-disponibili"],
+    queryFn: () => apiClient.entities.Vaschetta.filter({ active: true }),
+  });
+
+  const sortedVaschette = useMemo(
+    () =>
+      [...vaschette].sort((a, b) => {
+        const byOrder = (a.ordinamento || 0) - (b.ordinamento || 0);
+        if (byOrder !== 0) return byOrder;
+        return (a.peso_grammi || 0) - (b.peso_grammi || 0);
+      }),
+    [vaschette],
+  );
+
+  const selectedVaschetta = useMemo(
+    () => sortedVaschette.find((v) => String(v.id) === String(form.vaschetta_id)),
+    [sortedVaschette, form.vaschetta_id],
+  );
+
+  const paniniTotal = useMemo(() => {
+    const priceById = new Map(panini.map((p) => [String(p.id), Number(p.prezzo || 0)]));
+    return form.panini_items.reduce((sum, item) => {
+      const unitPrice = priceById.get(String(item.id)) || 0;
+      return sum + unitPrice * Number(item.quantita || 0);
+    }, 0);
+  }, [form.panini_items, panini]);
+
+  const gelatiTotal = useMemo(() => {
+    const needsGelati = form.tipo_ordine === "gelati" || form.tipo_ordine === "entrambi";
+    if (!needsGelati || !selectedVaschetta) return 0;
+    return Number(selectedVaschetta.prezzo || 0) * Number(form.quantita || 0);
+  }, [form.tipo_ordine, selectedVaschetta, form.quantita]);
+
+  const orderTotal = gelatiTotal + paniniTotal;
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -67,6 +103,10 @@ export default function Prenota() {
             ? `Gelati: ${form.gusti} | Panini: ${paniniDetails}`
             : form.gusti;
 
+      const vaschettaLabel = selectedVaschetta
+        ? `${selectedVaschetta.nome} (${selectedVaschetta.peso_grammi}g)`
+        : "";
+
       const bookingPayload = {
         nome_cliente: form.nome_cliente,
         telefono: form.telefono,
@@ -74,12 +114,12 @@ export default function Prenota() {
         data_ritiro: form.data_ritiro,
         ora_ritiro: form.ora_ritiro,
         gusti: orderDetails,
-        taglia: form.taglia,
+        taglia: vaschettaLabel || null,
         quantita: form.quantita,
-        note: [form.note, `Tipo ordine: ${tipoLabel}`].filter(Boolean).join("\n"),
+        note: [form.note, `Tipo ordine: ${tipoLabel}`, `Totale stimato: EUR ${orderTotal.toFixed(2)}`].filter(Boolean).join("\n"),
       };
 
-      return base44.entities.Prenotazione.create(bookingPayload);
+      return apiClient.entities.Prenotazione.create(bookingPayload);
     },
     onSuccess: () => {
       setSuccess(true);
@@ -105,6 +145,7 @@ export default function Prenota() {
       !form.data_ritiro ||
       !form.ora_ritiro ||
       (needsGelati && !form.gusti) ||
+      (needsGelati && !form.vaschetta_id) ||
       (needsPanini && form.panini_items.length === 0)
     ) {
       toast({ title: "Campi obbligatori", description: "Compila tutti i campi obbligatori.", variant: "destructive" });
@@ -166,6 +207,14 @@ export default function Prenota() {
       setForm((prev) => ({ ...prev, ora_ritiro: "" }));
     }
   }, [availableOrari, form.ora_ritiro]);
+
+  useEffect(() => {
+    if (!sortedVaschette.length) return;
+    setForm((prev) => {
+      if (prev.vaschetta_id) return prev;
+      return { ...prev, vaschetta_id: String(sortedVaschette[0].id) };
+    });
+  }, [sortedVaschette]);
 
   const togglePaninoSelection = (panino) => {
     setForm((prev) => {
@@ -471,41 +520,59 @@ export default function Prenota() {
               </div>
             )}
 
+            {(form.tipo_ordine === "gelati" || form.tipo_ordine === "entrambi") && (
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Info className="w-4 h-4 text-primary" />
+                  <p className="text-sm font-semibold">Vaschette disponibili</p>
+                </div>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  {sortedVaschette.length > 0 ? (
+                    sortedVaschette.map((v) => (
+                      <p key={v.id}>
+                        <span className="font-medium text-foreground">{v.nome}</span>
+                        {" - "}
+                        {v.peso_grammi}g - EUR {Number(v.prezzo || 0).toFixed(2)}
+                      </p>
+                    ))
+                  ) : (
+                    <p>Nessuna vaschetta attiva disponibile al momento.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className={`grid grid-cols-1 gap-4 ${form.tipo_ordine === "panini" ? "sm:grid-cols-1" : "sm:grid-cols-2"}`}>
               {form.tipo_ordine !== "panini" && (
                 <div className="space-y-2">
-                <Label className="font-body text-sm">Dimensione Vaschetta</Label>
+                <Label className="font-body text-sm">Vaschetta *</Label>
                 {isMobile ? (
                   <NativeSelect
                     className="w-full rounded-lg font-body"
-                    value={form.taglia}
-                    onChange={(e) => handleChange("taglia", e.target.value)}
+                    value={form.vaschetta_id}
+                    onChange={(e) => handleChange("vaschetta_id", e.target.value)}
                   >
-                    <NativeSelectOption className="" value="piccola">Piccola</NativeSelectOption>
-                    <NativeSelectOption className="" value="media">Media</NativeSelectOption>
-                    <NativeSelectOption className="" value="grande">Grande</NativeSelectOption>
+                    <NativeSelectOption className="" value="">Seleziona vaschetta</NativeSelectOption>
+                    {sortedVaschette.map((v) => (
+                      <NativeSelectOption className="" key={v.id} value={String(v.id)}>
+                        {v.nome} - {v.peso_grammi}g - EUR {Number(v.prezzo || 0).toFixed(2)}
+                      </NativeSelectOption>
+                    ))}
                   </NativeSelect>
                 ) : (
-                  <Select value={form.taglia} onValueChange={(v) => handleChange("taglia", v)}>
+                  <Select value={form.vaschetta_id} onValueChange={(v) => handleChange("vaschetta_id", v)}>
                     <SelectTrigger className="rounded-lg font-body">
-                      <SelectValue />
+                      <SelectValue placeholder="Seleziona vaschetta" />
                     </SelectTrigger>
                     <SelectContent className="">
-                      <SelectItem className="" value="piccola">Piccola</SelectItem>
-                      <SelectItem className="" value="media">Media</SelectItem>
-                      <SelectItem className="" value="grande">Grande</SelectItem>
+                      {sortedVaschette.map((v) => (
+                        <SelectItem className="" key={v.id} value={String(v.id)}>
+                          {v.nome} - {v.peso_grammi}g - EUR {Number(v.prezzo || 0).toFixed(2)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 )}
-                {/* Tooltip dimensioni */}
-                <div className="flex items-start gap-2 bg-accent/10 border border-accent/20 rounded-lg px-3 py-2.5 mt-1">
-                  <Info className="w-4 h-4 text-accent-foreground mt-0.5 flex-shrink-0" />
-                  <div className="text-xs text-muted-foreground font-body space-y-0.5">
-                    <p><span className="font-semibold text-foreground">Piccola</span> — circa 500g · ideale per 2 persone</p>
-                    <p><span className="font-semibold text-foreground">Media</span> — circa 1 kg · ideale per 4 persone</p>
-                    <p><span className="font-semibold text-foreground">Grande</span> — circa 2 kg · ideale per 6–8 persone</p>
-                  </div>
-                </div>
               </div>
               )}
               <div className="space-y-2">
@@ -529,6 +596,22 @@ export default function Prenota() {
                 placeholder="Allergie, richieste speciali..."
                 className="rounded-lg font-body"
               />
+            </div>
+
+            <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-2">
+              <h3 className="font-medium">Totale ordine (stimato)</h3>
+              <div className="text-sm text-muted-foreground space-y-1">
+                {(form.tipo_ordine === "gelati" || form.tipo_ordine === "entrambi") && (
+                  <p>
+                    Gelati: EUR {gelatiTotal.toFixed(2)}
+                    {selectedVaschetta ? ` (${selectedVaschetta.nome} x${form.quantita})` : ""}
+                  </p>
+                )}
+                {(form.tipo_ordine === "panini" || form.tipo_ordine === "entrambi") && (
+                  <p>Panini: EUR {paniniTotal.toFixed(2)}</p>
+                )}
+              </div>
+              <p className="text-lg font-semibold">Totale: EUR {orderTotal.toFixed(2)}</p>
             </div>
 
             <Button

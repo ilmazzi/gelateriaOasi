@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient.js";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,13 +32,41 @@ const extractTipoOrdine = (note) => {
   return match?.[1]?.trim() || null;
 };
 
+const extractTotaleStimato = (note) => {
+  if (!note) return null;
+  const match = note.match(/Totale stimato:\s*(.+)/i);
+  return match?.[1]?.trim() || null;
+};
+
 const cleanNote = (note) => {
   if (!note) return "";
   return note
     .split("\n")
-    .filter((line) => !/^Tipo ordine:\s*/i.test(line.trim()))
+    .filter((line) => {
+      const trimmed = line.trim();
+      return !/^Tipo ordine:\s*/i.test(trimmed) && !/^Totale stimato:\s*/i.test(trimmed);
+    })
     .join("\n")
     .trim();
+};
+
+const parseOrderDetails = (gusti) => {
+  const raw = String(gusti || "").trim();
+  if (!raw) return { gelati: "", panini: "", plain: "" };
+
+  const parts = raw.split("|").map((p) => p.trim()).filter(Boolean);
+  const gelatiPart = parts.find((p) => /^gelati:/i.test(p));
+  const paniniPart = parts.find((p) => /^panini:/i.test(p));
+
+  if (!gelatiPart && !paniniPart) {
+    return { gelati: "", panini: "", plain: raw };
+  }
+
+  return {
+    gelati: gelatiPart ? gelatiPart.replace(/^gelati:\s*/i, "").trim() : "",
+    panini: paniniPart ? paniniPart.replace(/^panini:\s*/i, "").trim() : "",
+    plain: "",
+  };
 };
 
 export default function AdminPrenotazioni() {
@@ -48,11 +76,11 @@ export default function AdminPrenotazioni() {
 
   const { data: prenotazioni = [], isLoading } = useQuery({
     queryKey: ["admin-prenotazioni"],
-    queryFn: () => base44.entities.Prenotazione.list("-created_date", 100),
+    queryFn: () => apiClient.entities.Prenotazione.list("-created_date", 100),
   });
 
   const updateMut = useMutation({
-    mutationFn: ({ id, stato }) => base44.entities.Prenotazione.update(id, { stato }),
+    mutationFn: ({ id, stato }) => apiClient.entities.Prenotazione.update(id, { stato }),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["admin-prenotazioni"] });
       if (result?._statusEmailSent === false) {
@@ -69,7 +97,7 @@ export default function AdminPrenotazioni() {
   });
 
   const deleteMut = useMutation({
-    mutationFn: (id) => base44.entities.Prenotazione.delete(id),
+    mutationFn: (id) => apiClient.entities.Prenotazione.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-prenotazioni"] }),
     onError: (error) => {
       toast({ title: "Errore eliminazione", description: error.message || "Operazione non riuscita", variant: "destructive" });
@@ -96,7 +124,9 @@ export default function AdminPrenotazioni() {
         <div className="grid gap-4">
           {prenotazioni.map((p) => {
             const tipoOrdine = extractTipoOrdine(p.note);
+            const totaleStimato = extractTotaleStimato(p.note);
             const userNote = cleanNote(p.note);
+            const orderDetails = parseOrderDetails(p.gusti);
             return (
             <Card key={p.id}>
               <CardContent className="p-4 sm:p-5">
@@ -131,12 +161,38 @@ export default function AdminPrenotazioni() {
                       </span>
                     </div>
 
-                    <div className="text-sm">
-                      <span className="font-medium">Ordine:</span> {p.gusti}
-                      {tipoOrdine && <span className="ml-2 text-muted-foreground">({tipoOrdine})</span>}
-                      {p.taglia && <span className="ml-2 text-muted-foreground">({p.taglia})</span>}
-                      {p.quantita > 1 && <span className="ml-1 text-muted-foreground">x{p.quantita}</span>}
+                    <div className="rounded-lg border border-border bg-secondary/30 p-3 space-y-2">
+                      <p className="text-sm font-semibold">Dettagli ordine</p>
+                      {orderDetails.plain && (
+                        <p className="text-sm text-foreground">{orderDetails.plain}</p>
+                      )}
+                      {orderDetails.gelati && (
+                        <div className="text-sm space-y-1">
+                          <p>
+                            <span className="font-medium">Gelati:</span> {orderDetails.gelati}
+                          </p>
+                          {(p.taglia || p.quantita > 1) && (
+                            <p className="text-xs text-muted-foreground">
+                              {p.taglia ? `Vaschetta: ${p.taglia}` : ""}
+                              {p.taglia && p.quantita > 1 ? " - " : ""}
+                              {p.quantita > 1 ? `Quantita: x${p.quantita}` : ""}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      {orderDetails.panini && (
+                        <p className="text-sm">
+                          <span className="font-medium">Panini:</span> {orderDetails.panini}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        {tipoOrdine && <span>Tipo: {tipoOrdine}</span>}
+                      </div>
                     </div>
+
+                    {totaleStimato && (
+                      <p className="text-sm font-medium text-primary">Totale stimato: {totaleStimato}</p>
+                    )}
 
                     {userNote && (
                       <p className="text-sm text-muted-foreground italic">"{userNote}"</p>

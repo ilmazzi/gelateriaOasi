@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient.js";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import PromoCard from "@/components/public/PromoCard";
@@ -7,7 +7,7 @@ import PromoCard from "@/components/public/PromoCard";
 export default function Promozioni() {
   const { data: promozioni = [], isLoading } = useQuery({
     queryKey: ["promozioni-attive"],
-    queryFn: () => base44.entities.Promozione.filter({ attiva: true }),
+    queryFn: () => apiClient.entities.Promozione.filter({ attiva: true }),
   });
 
   return (

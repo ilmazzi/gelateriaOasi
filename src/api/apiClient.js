@@ -6,7 +6,10 @@ const TABLE_MAP = {
   Promozione: "promozioni",
   FotoGalleria: "foto_galleria",
   Prenotazione: "prenotazioni",
+  Vaschetta: "vaschette",
   Negozio: "negozio",
+  Categoria: "categorie",
+  TipoProdotto: "product_types",
 };
 
 const normalizeRow = (row) => ({
@@ -62,6 +65,59 @@ const makeEntity = (entityName) => {
       });
     },
 
+    async categoryById(id){
+      return runWithClientLock(async () => {
+        const client = assertSupabase();
+        const { column, ascending } = parseOrder("id");
+        const result = await client
+        .from(table)
+        .select("name").eq("id", id)
+        .limit(1);
+        return ensureOk(result, `Lettura categoria ${table}`).map(normalizeRow);
+      });
+    },
+
+
+    async categoryByProductType(productType) {
+      return runWithClientLock(async () => {
+        const client = assertSupabase();
+        if (!productType) return [];
+
+        const normalizedType = String(productType).trim().toLowerCase();
+        const variants = new Set([normalizedType]);
+        if (normalizedType.endsWith("o")) variants.add(`${normalizedType.slice(0, -1)}i`);
+        if (normalizedType.endsWith("i")) variants.add(`${normalizedType.slice(0, -1)}o`);
+
+        const productTypeResult = await client
+          .from(TABLE_MAP.TipoProdotto)
+          .select("id, type")
+          .eq("active", true);
+
+        const productTypes = ensureOk(productTypeResult, `Lettura ${TABLE_MAP.TipoProdotto}`);
+        const productTypeRow = productTypes.find((row) => {
+          const dbType = String(row.type || "").trim().toLowerCase();
+          if (!dbType) return false;
+          for (const variant of variants) {
+            if (dbType === variant || dbType.includes(variant) || variant.includes(dbType)) {
+              return true;
+            }
+          }
+          return false;
+        });
+        if (!productTypeRow?.id) return [];
+
+        const result = await client
+          .from(table)
+          .select("*")
+          .eq("active", true)
+          .eq("product_type_id", productTypeRow.id);
+        return ensureOk(result, `Lettura categorie ${table}`).map(normalizeRow);
+      });
+    },
+
+
+    
+
     async filter(where = {}) {
       return runWithClientLock(async () => {
         const client = assertSupabase();
@@ -109,8 +165,36 @@ const makeEntity = (entityName) => {
     async update(id, payload) {
       return runWithClientLock(async () => {
         const client = assertSupabase();
-        const result = await client.from(table).update(payload).eq("id", id).select().single();
-        const record = normalizeRow(ensureOk(result, `Aggiornamento ${table}`));
+        let record;
+        try {
+          const result = await client.from(table).update(payload).eq("id", id).select().maybeSingle();
+          const data = ensureOk(result, `Aggiornamento ${table}`);
+          if (!data) {
+            const fallbackResult = await client.from(table).update(payload).eq("id", id);
+            ensureOk(fallbackResult, `Aggiornamento ${table}`);
+            record = normalizeRow({
+              id,
+              ...payload,
+              created_at: new Date().toISOString(),
+            });
+          } else {
+            record = normalizeRow(data);
+          }
+        } catch (error) {
+          const message = String(error?.message || "");
+          if (!message.includes("single JSON object")) {
+            throw error;
+          }
+
+          // Some tables may allow UPDATE but not SELECT via RLS.
+          const fallbackResult = await client.from(table).update(payload).eq("id", id);
+          ensureOk(fallbackResult, `Aggiornamento ${table}`);
+          record = normalizeRow({
+            id,
+            ...payload,
+            created_at: new Date().toISOString(),
+          });
+        }
 
         if (entityName === "Prenotazione" && payload?.stato && record?.email) {
           try {
@@ -177,14 +261,17 @@ const notifyBookingStatusEmail = async (client, booking) => {
   }
 };
 
-export const base44 = {
+export const apiClient = {
   entities: {
     Gelato: makeEntity("Gelato"),
     Panino: makeEntity("Panino"),
     Promozione: makeEntity("Promozione"),
     FotoGalleria: makeEntity("FotoGalleria"),
     Prenotazione: makeEntity("Prenotazione"),
+    Vaschetta: makeEntity("Vaschetta"),
     Negozio: makeEntity("Negozio"),
+    Categoria: makeEntity("Categoria"),
+    TipoProdotto: makeEntity("TipoProdotto"),
   },
   integrations: {
     Core: {

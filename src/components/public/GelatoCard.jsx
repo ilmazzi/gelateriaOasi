@@ -3,15 +3,9 @@ import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { IceCreamCone } from "lucide-react";
 
-const categoriaLabels = {
-  classico: "Classico",
-  frutta: "Frutta",
-  speciale: "Speciale",
-  vegano: "Vegano",
-  senza_zucchero: "Senza Zucchero",
-};
 
-export default function GelatoCard({ gelato, index = 0 }) {
+
+export default function GelatoCard({ gelato, categoria, index = 0 }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -31,9 +25,9 @@ export default function GelatoCard({ gelato, index = 0 }) {
             <IceCreamCone className="w-16 h-16 text-muted-foreground/30" />
           </div>
         )}
-        {gelato.categoria && (
+        {categoria && (
           <Badge className="absolute top-3 left-3 bg-background/80 backdrop-blur-sm text-foreground border-0 text-xs">
-            {categoriaLabels[gelato.categoria] || gelato.categoria}
+            {categoria}
           </Badge>
         )}
         {!gelato.disponibile && (

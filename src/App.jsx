@@ -24,7 +24,8 @@ import AdminLogin from '@/pages/admin/AdminLogin';
 import AdminResetPassword from '@/pages/admin/AdminResetPassword';
 import AdminPanini from '@/pages/admin/AdminPanini';
 import AdminNegozio from '@/pages/admin/AdminNegozio';
-
+import AdminCategorie from '@/pages/admin/AdminCategorie';
+import AdminVaschette from '@/pages/admin/AdminVaschette';
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, isAuthenticated, isAdmin, authError, navigateToLogin } = useAuth();
 
@@ -72,7 +73,8 @@ const AuthenticatedApp = () => {
         <Route path="/admin/foto" element={<AdminFoto />} />
         <Route path="/admin/prenotazioni" element={<AdminPrenotazioni />} />
         <Route path="/admin/negozio" element={<AdminNegozio />} />
-       
+        <Route path="/admin/categorie" element={<AdminCategorie />} />
+        <Route path="/admin/vaschette" element={<AdminVaschette />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

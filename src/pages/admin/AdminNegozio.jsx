@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ export default function AdminNegozio() {
 
   const { data: negozio = [], isLoading } = useQuery({
     queryKey: ["admin-negozio"],
-    queryFn: () => base44.entities.Negozio.list(),
+    queryFn: () => apiClient.entities.Negozio.list(),
   });
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function AdminNegozio() {
   }, [negozio]);
 
   const createMut = useMutation({
-    mutationFn: () => base44.entities.Negozio.create({
+    mutationFn: () => apiClient.entities.Negozio.create({
       nome: form.nome.trim(),
       descrizione: form.descrizione.trim(),
       foto: form.foto.trim(),
@@ -75,7 +75,7 @@ export default function AdminNegozio() {
   const updateMut = useMutation({
     mutationFn: () => {
       if (!recordId) throw new Error("Record negozio non trovato");
-      return base44.entities.Negozio.update(recordId, {
+      return apiClient.entities.Negozio.update(recordId, {
         nome: form.nome.trim(),
         descrizione: form.descrizione.trim(),
         foto: form.foto.trim(),
@@ -121,7 +121,7 @@ export default function AdminNegozio() {
     if (!file) return;
 
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await apiClient.integrations.Core.UploadFile({ file });
       setForm((prev) => ({ ...prev, foto: file_url }));
     } catch (error) {
       toast({

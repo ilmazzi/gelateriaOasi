@@ -1,33 +1,53 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient.js";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import PaninoCard from "@/components/public/PaninoCard";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"; 
 
 
-const categorie = [
-    { value: "tutti", label: "Tutti" },
-    { value: "toast", label: "Toast" },
-    { value: "panino", label: "Panino" },
-    { value: "sandwich", label: "Sandwich" },
-    { value: "focaccia", label: "Focaccia" },
-   
-  ];
-  
 
 export default function Panini() {
 
-    const [categoria, setCategoria] = useState("tutti");
+  const [categoria, setCategoria] = useState("tutti");
+
+  const { data: categorie = [] } = useQuery({
+    queryKey: ["categorie-panini"],
+    queryFn: () => apiClient.entities.Categoria.categoryByProductType("Panini"),
+  });
+
+
+  
+  const categorieTabs = [
+    { value: "tutti", label: "Tutti" },
+    ...categorie
+      .map((c) => {
+        const value = c.id;
+        const label = c.label || c.name || c.name_it || c.value || c.slug;
+        if (!value || !label) return null;
+        return { value: String(value).trim(), label: String(label).trim() };
+      })
+      .filter(Boolean),
+  ];
+
+  const categorieById = new Map(
+    categorie.map((c) => [String(c.id), c.name_it || c.name || c.label || ""])
+  );
+
+  const getCategoriaLabel = (panino) => {
+    const categoriaRaw = String(panino.categoria ?? panino.categoria_id ?? "");
+    return categorieById.get(categoriaRaw) || categoriaRaw;
+  };
 
     const { data: panini = [], isLoading } = useQuery({
       queryKey: ["panini"],
-      queryFn: () => base44.entities.Panino.filter({ disponibile: true }),
+      queryFn: () => apiClient.entities.Panino.filter({ disponibile: true }),
     });
   
     const filtered = categoria === "tutti"
       ? panini
-      : panini.filter((p) => p.categoria === categoria);
+      : panini.filter((p) => String(p.categoria ?? p.categoria_id ?? "") === String(categoria));
+      
       return (
         <div className="min-h-screen">
           {/* Header */}
@@ -51,7 +71,7 @@ export default function Panini() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center">
               <Tabs value={categoria} onValueChange={setCategoria} className="w-full">
                 <TabsList className="w-full bg-secondary group-data-horizontal/tabs:h-auto grid grid-cols-2 sm:grid-cols-3 md:flex md:justify-center gap-1 p-1 relative z-10">
-                  {categorie.map((c) => (
+                  {categorieTabs.map((c) => (
                     <TabsTrigger
                       key={c.value}
                       value={c.value}
@@ -79,7 +99,12 @@ export default function Panini() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {filtered.map((panino, i) => (
-                    <PaninoCard key={panino.id} panino={panino} index={i} />
+                    <PaninoCard
+                      key={panino.id}
+                      panino={panino}
+                      categoria={getCategoriaLabel(panino)}
+                      index={i}
+                    />
                   ))}
                 </div>
               )}

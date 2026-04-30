@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient.js";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -14,7 +14,7 @@ import PaninoCard from "@/components/public/PaninoCard";
 export default function Home() {
   const { data: negozio = [] } = useQuery({
     queryKey: ["negozio-public"],
-    queryFn: () => base44.entities.Negozio.list(),
+    queryFn: () => apiClient.entities.Negozio.list(),
   });
 
   const infoNegozio = negozio?.[0] || {};
@@ -26,7 +26,7 @@ export default function Home() {
     error: errorGelati,
   } = useQuery({
     queryKey: ["gelati-evidenza"],
-    queryFn: () => base44.entities.Gelato.filter({ in_evidenza: true, disponibile: true }),
+    queryFn: () => apiClient.entities.Gelato.filter({ in_evidenza: true, disponibile: true }),
   });
 
   const {
@@ -35,7 +35,7 @@ export default function Home() {
     error: errorPanini,
   } = useQuery({
     queryKey: ["panini-evidenza"],
-    queryFn: () => base44.entities.Panino.filter({ in_evidenza: true, disponibile: true }),
+    queryFn: () => apiClient.entities.Panino.filter({ in_evidenza: true, disponibile: true }),
   });
 
   const {
@@ -44,7 +44,7 @@ export default function Home() {
     error: errorPromo,
   } = useQuery({
     queryKey: ["promo-attive"],
-    queryFn: () => base44.entities.Promozione.filter({ attiva: true }),
+    queryFn: () => apiClient.entities.Promozione.filter({ attiva: true }),
   });
 
   const {
@@ -53,7 +53,7 @@ export default function Home() {
     error: errorFoto,
   } = useQuery({
     queryKey: ["foto-evidenza"],
-    queryFn: () => base44.entities.FotoGalleria.filter({ in_evidenza: true }),
+    queryFn: () => apiClient.entities.FotoGalleria.filter({ in_evidenza: true }),
   });
 
   const hasDataError = Boolean(errorGelati || errorPromo || errorFoto);

@@ -13,7 +13,37 @@ type BookingPayload = {
   gusti: string;
   taglia?: string | null;
   quantita?: number | null;
+  note?: string | null;
   stato?: string | null;
+};
+
+const extractMetaFromNote = (note?: string | null) => {
+  const raw = String(note || "");
+  const tipoOrdine = raw.match(/Tipo ordine:\s*(.+)/i)?.[1]?.trim() || "";
+  const totaleStimato = raw.match(/Totale stimato:\s*(.+)/i)?.[1]?.trim() || "";
+  const userNote = raw
+    .split("\n")
+    .filter((line) => {
+      const trimmed = line.trim();
+      return trimmed && !/^Tipo ordine:\s*/i.test(trimmed) && !/^Totale stimato:\s*/i.test(trimmed);
+    })
+    .join("\n")
+    .trim();
+  return { tipoOrdine, totaleStimato, userNote };
+};
+
+const parseOrderDetails = (gusti?: string | null) => {
+  const raw = String(gusti || "").trim();
+  if (!raw) return { gelati: "", panini: "", plain: "" };
+  const parts = raw.split("|").map((p) => p.trim()).filter(Boolean);
+  const gelatiPart = parts.find((p) => /^gelati:/i.test(p));
+  const paniniPart = parts.find((p) => /^panini:/i.test(p));
+  if (!gelatiPart && !paniniPart) return { gelati: "", panini: "", plain: raw };
+  return {
+    gelati: gelatiPart ? gelatiPart.replace(/^gelati:\s*/i, "").trim() : "",
+    panini: paniniPart ? paniniPart.replace(/^panini:\s*/i, "").trim() : "",
+    plain: "",
+  };
 };
 
 const statoLabels: Record<string, string> = {
@@ -40,7 +70,10 @@ const statoBadgeColor = (stato: string) => {
   return "#b04979";
 };
 
-const buildStatusHtml = (booking: BookingPayload, statoLabel: string) => `
+const buildStatusHtml = (booking: BookingPayload, statoLabel: string) => {
+  const meta = extractMetaFromNote(booking.note);
+  const order = parseOrderDetails(booking.gusti);
+  return `
   <div style="margin:0;background:#fdf9fb;padding:24px;font-family:Inter,Arial,sans-serif;">
     <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #f1e5ea;border-radius:18px;overflow:hidden;">
       <div style="padding:18px 22px;background:linear-gradient(90deg,#fdf4f8 0%,#fff 100%);border-bottom:1px solid #f1e5ea;">
@@ -55,8 +88,13 @@ const buildStatusHtml = (booking: BookingPayload, statoLabel: string) => `
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;border:1px solid #f1e5ea;border-radius:12px;overflow:hidden;">
           <tr><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#6b5b65;font-size:13px;width:34%;">Data ritiro</td><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#241a1f;font-size:13px;font-weight:600;">${escapeHtml(booking.data_ritiro)}</td></tr>
           <tr><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#6b5b65;font-size:13px;">Ora ritiro</td><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#241a1f;font-size:13px;font-weight:600;">${escapeHtml(booking.ora_ritiro)}</td></tr>
-          <tr><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#6b5b65;font-size:13px;">Ordine</td><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#241a1f;font-size:13px;font-weight:600;">${escapeHtml(booking.gusti)}</td></tr>
-          <tr><td style="padding:10px 12px;color:#6b5b65;font-size:13px;">Taglia / Quantita</td><td style="padding:10px 12px;color:#241a1f;font-size:13px;font-weight:600;">${escapeHtml(booking.taglia || "-")} / ${escapeHtml(String(booking.quantita ?? 1))}</td></tr>
+          <tr><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#6b5b65;font-size:13px;">Ordine gelati</td><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#241a1f;font-size:13px;font-weight:600;">${escapeHtml(order.gelati || "-")}</td></tr>
+          <tr><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#6b5b65;font-size:13px;">Vaschetta / Quantita</td><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#241a1f;font-size:13px;font-weight:600;">${escapeHtml(booking.taglia || "-")} / ${escapeHtml(String(booking.quantita ?? 1))}</td></tr>
+          <tr><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#6b5b65;font-size:13px;">Ordine panini</td><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#241a1f;font-size:13px;font-weight:600;">${escapeHtml(order.panini || "-")}</td></tr>
+          <tr><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#6b5b65;font-size:13px;">Ordine (altro)</td><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#241a1f;font-size:13px;font-weight:600;">${escapeHtml(order.plain || "-")}</td></tr>
+          <tr><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#6b5b65;font-size:13px;">Tipo ordine</td><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#241a1f;font-size:13px;font-weight:600;">${escapeHtml(meta.tipoOrdine || "-")}</td></tr>
+          <tr><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#6b5b65;font-size:13px;">Totale stimato</td><td style="padding:10px 12px;border-bottom:1px solid #f1e5ea;color:#241a1f;font-size:13px;font-weight:600;">${escapeHtml(meta.totaleStimato || "-")}</td></tr>
+          <tr><td style="padding:10px 12px;color:#6b5b65;font-size:13px;">Note</td><td style="padding:10px 12px;color:#241a1f;font-size:13px;font-weight:600;">${escapeHtml(meta.userNote || "-")}</td></tr>
         </table>
       </div>
       <div style="padding:14px 22px;background:#fff7fa;border-top:1px solid #f1e5ea;color:#8c6f7f;font-size:12px;">
@@ -65,6 +103,7 @@ const buildStatusHtml = (booking: BookingPayload, statoLabel: string) => `
     </div>
   </div>
 `;
+};
 
 const sendBrevoEmail = async (to: string, subject: string, text: string, html: string) => {
   const brevoApiKey = Deno.env.get("BREVO_API_KEY");
@@ -116,7 +155,9 @@ serve(async (req) => {
     const stato = booking.stato || "in_attesa";
     const statoLabel = statoLabels[stato] || stato;
     const subject = `Aggiornamento prenotazione: ${statoLabel}`;
-    const body = `Ciao ${booking.nome_cliente},\nla tua prenotazione e stata aggiornata.\n\nStato: ${statoLabel}\nData ritiro: ${booking.data_ritiro}\nOra ritiro: ${booking.ora_ritiro}\nOrdine: ${booking.gusti}\nTaglia: ${booking.taglia || "-"}\nQuantita: ${booking.quantita ?? 1}\n\nGrazie,\nGelateria Oasi`;
+    const meta = extractMetaFromNote(booking.note);
+    const order = parseOrderDetails(booking.gusti);
+    const body = `Ciao ${booking.nome_cliente},\nla tua prenotazione e stata aggiornata.\n\nStato: ${statoLabel}\nData ritiro: ${booking.data_ritiro}\nOra ritiro: ${booking.ora_ritiro}\nOrdine gelati: ${order.gelati || "-"}\nVaschetta/Quantita: ${booking.taglia || "-"} / ${booking.quantita ?? 1}\nOrdine panini: ${order.panini || "-"}\nOrdine (altro): ${order.plain || "-"}\nTipo ordine: ${meta.tipoOrdine || "-"}\nTotale stimato: ${meta.totaleStimato || "-"}\nNote: ${meta.userNote || "-"}\n\nGrazie,\nGelateria Oasi`;
 
     await sendBrevoEmail(booking.email, subject, body, buildStatusHtml(booking, statoLabel));
 

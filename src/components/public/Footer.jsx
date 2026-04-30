@@ -1,12 +1,12 @@
 import { IceCreamCone, MapPin, Phone, Clock, Camera, CircleUserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient.js";
 
 export default function Footer() {
   const { data: negozio = [] } = useQuery({
     queryKey: ["negozio-public"],
-    queryFn: () => base44.entities.Negozio.list(),
+    queryFn: () => apiClient.entities.Negozio.list(),
   });
 
   const info = negozio?.[0] || {};

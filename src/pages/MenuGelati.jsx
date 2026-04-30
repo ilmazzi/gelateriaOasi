@@ -1,30 +1,50 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient.js";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import GelatoCard from "@/components/public/GelatoCard";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const categorie = [
-  { value: "tutti", label: "Tutti" },
-  { value: "classico", label: "Classici" },
-  { value: "frutta", label: "Frutta" },
-  { value: "speciale", label: "Speciali" },
-  { value: "vegano", label: "Vegano" },
-  { value: "senza_zucchero", label: "Senza Zucchero" },
-];
+
 
 export default function MenuGelati() {
-  const [categoria, setCategoria] = useState("tutti");
 
   const { data: gelati = [], isLoading } = useQuery({
     queryKey: ["gelati"],
-    queryFn: () => base44.entities.Gelato.filter({ disponibile: true }),
+    queryFn: () => apiClient.entities.Gelato.filter({ disponibile: true }),
   });
+
+  const [categoria, setCategoria] = useState("tutti");
+  const { data: categorie = [] } = useQuery({
+    queryKey: ["categorie-gelati"],
+    queryFn: () => apiClient.entities.Categoria.categoryByProductType("Gelati"),
+  });
+
+
+  const categorieTabs = [
+    { value: "tutti", label: "Tutti" },
+    ...categorie
+      .map((c) => {
+        const value = c.id;
+        const label = c.label || c.name || c.name_it || c.value || c.slug;
+        if (!value || !label) return null;
+        return { value: String(value).trim(), label: String(label).trim() };
+      })
+      .filter(Boolean),
+  ];
+  const categorieById = new Map(
+    categorie.map((c) => [String(c.id), c.name_it || c.name || c.label || ""])
+  );
+
+  const getCategoriaLabel = (gelato) => {
+    const categoriaRaw = String(gelato.categoria ?? gelato.categoria_id ?? "");
+    return categorieById.get(categoriaRaw) || categoriaRaw;
+  };
+
 
   const filtered = categoria === "tutti"
     ? gelati
-    : gelati.filter((g) => g.categoria === categoria);
+    : gelati.filter((g) => String(g.categoria ?? g.categoria_id ?? "") === String(categoria));
 
   return (
     <div className="min-h-screen">
@@ -49,7 +69,7 @@ export default function MenuGelati() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center">
           <Tabs value={categoria} onValueChange={setCategoria} className="w-full">
             <TabsList className="w-full bg-secondary group-data-horizontal/tabs:h-auto grid grid-cols-2 sm:grid-cols-3 md:flex md:justify-center gap-1 p-1 relative z-10">
-              {categorie.map((c) => (
+              {categorieTabs.map((c) => (
                 <TabsTrigger
                   key={c.value}
                   value={c.value}
@@ -77,7 +97,7 @@ export default function MenuGelati() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filtered.map((gelato, i) => (
-                <GelatoCard key={gelato.id} gelato={gelato} index={i} />
+                <GelatoCard key={gelato.id} gelato={gelato} categoria={getCategoriaLabel(gelato)} index={i} />
               ))}
             </div>
           )}

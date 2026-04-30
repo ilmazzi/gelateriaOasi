@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { apiClient } from "@/api/apiClient.js";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,11 +25,11 @@ export default function AdminPanini() {
 
   const { data: panini = [], isLoading } = useQuery({
     queryKey: ["admin-panini"],
-    queryFn: () => base44.entities.Panino.list(),
+    queryFn: () => apiClient.entities.Panino.list(),
   });
 
   const createMut = useMutation({
-    mutationFn: (d) => base44.entities.Panino.create(d),
+    mutationFn: (d) => apiClient.entities.Panino.create(d),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-panini"] }); closeDialog(); },
     onError: (error) => {
       toast({ title: "Errore creazione", description: error.message || "Operazione non riuscita", variant: "destructive" });
@@ -37,7 +37,7 @@ export default function AdminPanini() {
   });
 
   const updateMut = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Panino.update(id, data),
+    mutationFn: ({ id, data }) => apiClient.entities.Panino.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-panini"] }); closeDialog(); },
     onError: (error) => {
       toast({ title: "Errore aggiornamento", description: error.message || "Verifica ruolo admin/policy", variant: "destructive" });
@@ -45,7 +45,7 @@ export default function AdminPanini() {
   });
 
   const deleteMut = useMutation({
-    mutationFn: (id) => base44.entities.Panino.delete(id),
+    mutationFn: (id) => apiClient.entities.Panino.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-panini"] }),
     onError: (error) => {
       toast({ title: "Errore eliminazione", description: error.message || "Operazione non riuscita", variant: "destructive" });
@@ -79,7 +79,7 @@ export default function AdminPanini() {
   const handleFoto = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const { file_url } = await apiClient.integrations.Core.UploadFile({ file });
     setForm((prev) => ({ ...prev, foto: file_url }));
   };
 

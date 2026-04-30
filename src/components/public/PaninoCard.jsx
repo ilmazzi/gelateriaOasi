@@ -3,15 +3,11 @@ import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import {  Sandwich } from "lucide-react";
 
-const categoriaLabels = {
-  toast: "Toast",
-  panino: "Panino",
-  sandwich: "Sandwich",
- focaccia: "Focaccia",
 
-};
 
-export default function PaninoCard({ panino, index = 0 }) {
+export default function PaninoCard({ panino, categoria, index = 0 }) {
+  const categoriaLabel = String(categoria || "").trim();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -31,9 +27,9 @@ export default function PaninoCard({ panino, index = 0 }) {
             <Sandwich className="w-16 h-16 text-muted-foreground/30" />
           </div>
         )}
-        {panino.categoria && (
+        {categoriaLabel && (
           <Badge className="absolute top-3 left-3 bg-background/80 backdrop-blur-sm text-foreground border-0 text-xs">
-            {categoriaLabels[panino.categoria] || panino.categoria}
+            {categoriaLabel}
           </Badge>
         )}
         {!panino.disponibile && (

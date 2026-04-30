@@ -17,17 +17,54 @@ type BookingPayload = {
   note?: string | null;
 };
 
-const formatBookingDetailsText = (booking: BookingPayload) => `
+const extractMetaFromNote = (note?: string | null) => {
+  const raw = String(note || "");
+  const tipoOrdine = raw.match(/Tipo ordine:\s*(.+)/i)?.[1]?.trim() || "";
+  const totaleStimato = raw.match(/Totale stimato:\s*(.+)/i)?.[1]?.trim() || "";
+  const userNote = raw
+    .split("\n")
+    .filter((line) => {
+      const trimmed = line.trim();
+      return trimmed && !/^Tipo ordine:\s*/i.test(trimmed) && !/^Totale stimato:\s*/i.test(trimmed);
+    })
+    .join("\n")
+    .trim();
+
+  return { tipoOrdine, totaleStimato, userNote };
+};
+
+const parseOrderDetails = (gusti?: string | null) => {
+  const raw = String(gusti || "").trim();
+  if (!raw) return { gelati: "", panini: "", plain: "" };
+  const parts = raw.split("|").map((p) => p.trim()).filter(Boolean);
+  const gelatiPart = parts.find((p) => /^gelati:/i.test(p));
+  const paniniPart = parts.find((p) => /^panini:/i.test(p));
+  if (!gelatiPart && !paniniPart) return { gelati: "", panini: "", plain: raw };
+  return {
+    gelati: gelatiPart ? gelatiPart.replace(/^gelati:\s*/i, "").trim() : "",
+    panini: paniniPart ? paniniPart.replace(/^panini:\s*/i, "").trim() : "",
+    plain: "",
+  };
+};
+
+const formatBookingDetailsText = (booking: BookingPayload) => {
+  const meta = extractMetaFromNote(booking.note);
+  const order = parseOrderDetails(booking.gusti);
+  return `
 Nome: ${booking.nome_cliente}
 Telefono: ${booking.telefono}
 Email: ${booking.email || "-"}
 Data ritiro: ${booking.data_ritiro}
 Ora ritiro: ${booking.ora_ritiro}
-Ordine: ${booking.gusti}
-Taglia: ${booking.taglia || "-"}
-Quantita: ${booking.quantita ?? 1}
-Note: ${booking.note || "-"}
+Ordine gelati: ${order.gelati || "-"}
+Vaschetta / Quantita: ${booking.taglia || "-"} / ${booking.quantita ?? 1}
+Ordine panini: ${order.panini || "-"}
+Ordine (altro): ${order.plain || "-"}
+Tipo ordine: ${meta.tipoOrdine || "-"}
+Totale stimato: ${meta.totaleStimato || "-"}
+Note: ${meta.userNote || "-"}
 `;
+};
 
 const escapeHtml = (value: unknown) =>
   String(value ?? "-")
@@ -37,17 +74,24 @@ const escapeHtml = (value: unknown) =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 
-const bookingRows = (booking: BookingPayload) => [
+const bookingRows = (booking: BookingPayload) => {
+  const meta = extractMetaFromNote(booking.note);
+  const order = parseOrderDetails(booking.gusti);
+  return [
   ["Nome", booking.nome_cliente],
   ["Telefono", booking.telefono],
   ["Email", booking.email || "-"],
   ["Data ritiro", booking.data_ritiro],
   ["Ora ritiro", booking.ora_ritiro],
-  ["Ordine", booking.gusti],
-  ["Taglia", booking.taglia || "-"],
-  ["Quantita", String(booking.quantita ?? 1)],
-  ["Note", booking.note || "-"],
+  ["Ordine gelati", order.gelati || "-"],
+  ["Vaschetta / Quantita", `${booking.taglia || "-"} / ${String(booking.quantita ?? 1)}`],
+  ["Ordine panini", order.panini || "-"],
+  ["Ordine (altro)", order.plain || "-"],
+  ["Tipo ordine", meta.tipoOrdine || "-"],
+  ["Totale stimato", meta.totaleStimato || "-"],
+  ["Note", meta.userNote || "-"],
 ];
+};
 
 const buildEmailHtml = (title: string, subtitle: string, booking: BookingPayload) => {
   const rows = bookingRows(booking)
