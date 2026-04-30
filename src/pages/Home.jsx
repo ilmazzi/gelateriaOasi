@@ -56,6 +56,33 @@ export default function Home() {
     queryFn: () => apiClient.entities.FotoGalleria.filter({ in_evidenza: true }),
   });
 
+  const { data: categorieGelati = [] } = useQuery({
+    queryKey: ["home-categorie-gelati"],
+    queryFn: () => apiClient.entities.Categoria.categoryByProductType("Gelati"),
+  });
+
+  const { data: categoriePanini = [] } = useQuery({
+    queryKey: ["home-categorie-panini"],
+    queryFn: () => apiClient.entities.Categoria.categoryByProductType("Panini"),
+  });
+
+  const categorieGelatiById = new Map(
+    categorieGelati.map((c) => [String(c.id), c.name || c.name_it || c.label || ""])
+  );
+  const categoriePaniniById = new Map(
+    categoriePanini.map((c) => [String(c.id), c.name || c.name_it || c.label || ""])
+  );
+
+  const getGelatoCategoriaLabel = (gelato) => {
+    const raw = String(gelato.categoria ?? gelato.categoria_id ?? "");
+    return categorieGelatiById.get(raw) || raw;
+  };
+
+  const getPaninoCategoriaLabel = (panino) => {
+    const raw = String(panino.categoria ?? panino.categoria_id ?? "");
+    return categoriePaniniById.get(raw) || raw;
+  };
+
   const hasDataError = Boolean(errorGelati || errorPromo || errorFoto);
   const isLoadingData = isLoadingGelati || isLoadingPromo || isLoadingFoto;
   const errorDetails = [errorGelati, errorPromo, errorFoto]
@@ -164,7 +191,12 @@ export default function Home() {
             </motion.div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {gelati.slice(0, 8).map((gelato, i) => (
-                <GelatoCard key={gelato.id} gelato={gelato} index={i} />
+                <GelatoCard
+                  key={gelato.id}
+                  gelato={gelato}
+                  categoria={getGelatoCategoriaLabel(gelato)}
+                  index={i}
+                />
               ))}
             </div>
             <div className="text-center mt-10">
@@ -196,7 +228,12 @@ export default function Home() {
             </motion.div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {panini.slice(0, 8).map((panino, i) => (
-                <PaninoCard key={panino.id} panino={panino} index={i} />
+                <PaninoCard
+                  key={panino.id}
+                  panino={panino}
+                  categoria={getPaninoCategoriaLabel(panino)}
+                  index={i}
+                />
               ))}
             </div>
             <div className="text-center mt-10">
