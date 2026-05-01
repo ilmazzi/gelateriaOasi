@@ -10,7 +10,8 @@ const databaseUrl = process.env.DATABASE_URL?.trim();
 const pgUser = process.env.PG_USER || process.env.PGUSER;
 const pgPassword = process.env.PG_PASSWORD || process.env.PGPASSWORD;
 const pgHost = process.env.PG_HOST || process.env.PGHOST;
-const pgPort = process.env.PG_PORT || process.env.PGPORT;
+/** Railway a volte espone tutto tranne la porta; 5432 è il default Postgres. */
+const pgPort = process.env.PG_PORT || process.env.PGPORT || "5432";
 const pgDatabase = process.env.PG_DATABASE || process.env.PGDATABASE;
 
 let pool;
@@ -20,7 +21,7 @@ if (databaseUrl) {
     connectionString: databaseUrl,
     ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
   });
-} else if (pgUser && pgPassword && pgHost && pgPort && pgDatabase) {
+} else if (pgUser && pgPassword && pgHost && pgDatabase) {
   pool = new pg.Pool({
     user: pgUser,
     password: pgPassword,
@@ -31,8 +32,8 @@ if (databaseUrl) {
   });
 } else {
   throw new Error(
-    "Database non configurato: imposta DATABASE_URL oppure PG_USER/PG_PASSWORD/PG_HOST/PG_PORT/PG_DATABASE " +
-      "(o le equivalenti PGUSER, PGPASSWORD, PGHOST, PGPORT, PGDATABASE da Railway Postgres).",
+    "Database non configurato: imposta DATABASE_URL oppure PG_USER, PG_PASSWORD, PG_HOST, PG_DATABASE " +
+      "(PG_PORT opzionale, default 5432). Equivalenti libpq: PGUSER, PGPASSWORD, PGHOST, PGDATABASE.",
   );
 }
 

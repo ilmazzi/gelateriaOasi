@@ -23,7 +23,21 @@ const getApiBaseUrl = () => {
   if (!envUrl) {
     throw new Error("VITE_API_URL non impostata: configura la variabile ambiente del frontend.");
   }
-  return String(envUrl).replace(/\/$/, "");
+  let u = String(envUrl).trim().replace(/\/$/, "");
+  if (!/^https?:\/\//i.test(u)) {
+    throw new Error(
+      `VITE_API_URL deve includere il protocollo (es. https://…/api). Valore attuale: ${u.slice(0, 80)}`,
+    );
+  }
+  if (typeof window !== "undefined") {
+    const onLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(window.location.origin);
+    if (!onLocalhost && /localhost|127\.0\.0\.1/i.test(u)) {
+      throw new Error(
+        "Il sito è in produzione ma VITE_API_URL punta a localhost: imposta su Railway VITE_API_URL=https://<backend>.up.railway.app/api e rifai il deploy del frontend.",
+      );
+    }
+  }
+  return u;
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -78,11 +92,25 @@ const request = async (path, options = {}) => {
   }
 
   const url = `${API_BASE_URL}${path}`;
-  const res = await fetch(url, {
-    method: options.method || "GET",
-    headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(url, {
+      method: options.method || "GET",
+      headers,
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg === "Failed to fetch" || err instanceof TypeError) {
+      throw new Error(
+        `Rete o CORS: impossibile raggiungere ${url}. ` +
+          `Su Railway: VITE_API_URL=https://<backend>.up.railway.app/api sul servizio frontend (poi rebuild); ` +
+          `sul backend CORS_ORIGIN=https://<stesso-dominio-del-sito>.up.railway.app (senza slash finale). ` +
+          `Dettaglio: ${msg}`,
+      );
+    }
+    throw err;
+  }
 
   if (!res.ok) {
     const message = await parseError(res);

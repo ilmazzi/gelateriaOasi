@@ -8,8 +8,24 @@ import entitiesRoutes from "./routes/entitiesRoutes.js";
 const app = express();
 const port = process.env.PORT || 3000;
 
-const corsOrigin = process.env.CORS_ORIGIN?.replace(/\/$/, "").trim();
-app.use(cors({ origin: corsOrigin || "*" }));
+/** Più affidabile di "*" con preflight + header Authorization (vedi fetch API). */
+const parseCorsOrigins = (raw) => {
+  if (raw == null || !String(raw).trim()) return true;
+  const s = String(raw).replace(/\/$/, "").trim();
+  if (!s || s === "*") return true;
+  const list = s.split(",").map((o) => o.trim().replace(/\/$/, "")).filter(Boolean);
+  if (list.length === 0) return true;
+  if (list.length === 1) return list[0];
+  return list;
+};
+
+app.use(
+  cors({
+    origin: parseCorsOrigins(process.env.CORS_ORIGIN),
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 // Upload immagini lato frontend usa data URL (base64), quindi serve un limite più alto.
 app.use(express.json({ limit: "15mb" }));
 
