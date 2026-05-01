@@ -20,8 +20,10 @@ const normalizeRow = (row) => ({
 
 const getApiBaseUrl = () => {
   const envUrl = /** @type {any} */ (import.meta).env?.VITE_API_URL;
-  if (envUrl) return String(envUrl).replace(/\/$/, "");
-  return "http://localhost:3000/api";
+  if (!envUrl) {
+    throw new Error("VITE_API_URL non impostata: configura la variabile ambiente del frontend.");
+  }
+  return String(envUrl).replace(/\/$/, "");
 };
 
 const API_BASE_URL = getApiBaseUrl();
