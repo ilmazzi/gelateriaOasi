@@ -3,24 +3,38 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const requiredEnvVars = ["PG_USER", "PG_PASSWORD", "PG_HOST", "PG_PORT", "PG_DATABASE"];
-
-for (const key of requiredEnvVars) {
-  if (!process.env[key]) {
-    throw new Error(`Environment variable ${key} is not set`);
-  }
-}
-
 const useSsl = process.env.PG_SSL === "true";
+const databaseUrl = process.env.DATABASE_URL?.trim();
 
-const pool = new pg.Pool({
-  user: process.env.PG_USER,
-  password: process.env.PG_PASSWORD,
-  host: process.env.PG_HOST,
-  port: Number(process.env.PG_PORT),
-  database: process.env.PG_DATABASE,
-  ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
-});
+/** Compat: nostre PG_* oppure variabili libpq / Railway (${{ Postgres.* }}) */
+const pgUser = process.env.PG_USER || process.env.PGUSER;
+const pgPassword = process.env.PG_PASSWORD || process.env.PGPASSWORD;
+const pgHost = process.env.PG_HOST || process.env.PGHOST;
+const pgPort = process.env.PG_PORT || process.env.PGPORT;
+const pgDatabase = process.env.PG_DATABASE || process.env.PGDATABASE;
+
+let pool;
+
+if (databaseUrl) {
+  pool = new pg.Pool({
+    connectionString: databaseUrl,
+    ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
+  });
+} else if (pgUser && pgPassword && pgHost && pgPort && pgDatabase) {
+  pool = new pg.Pool({
+    user: pgUser,
+    password: pgPassword,
+    host: pgHost,
+    port: Number(pgPort),
+    database: pgDatabase,
+    ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
+  });
+} else {
+  throw new Error(
+    "Database non configurato: imposta DATABASE_URL oppure PG_USER/PG_PASSWORD/PG_HOST/PG_PORT/PG_DATABASE " +
+      "(o le equivalenti PGUSER, PGPASSWORD, PGHOST, PGPORT, PGDATABASE da Railway Postgres).",
+  );
+}
 
 pool.on("error", (err) => {
   console.error("Postgres pool error:", err);

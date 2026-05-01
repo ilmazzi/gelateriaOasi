@@ -8,7 +8,8 @@ import entitiesRoutes from "./routes/entitiesRoutes.js";
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
+const corsOrigin = process.env.CORS_ORIGIN?.replace(/\/$/, "").trim();
+app.use(cors({ origin: corsOrigin || "*" }));
 // Upload immagini lato frontend usa data URL (base64), quindi serve un limite più alto.
 app.use(express.json({ limit: "15mb" }));
 
@@ -40,6 +41,6 @@ app.use((err, req, res, next) => {
   res.status(statusCode).json({ error: message });
 });
 
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+app.listen(Number(port), "0.0.0.0", () => {
+  console.log(`Server listening on 0.0.0.0:${port}`);
 });
