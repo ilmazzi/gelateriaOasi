@@ -252,7 +252,7 @@ export default function Home() {
         <section className="py-16">
           <div className="max-w-4xl mx-auto px-4 text-center">
             <p className="text-muted-foreground">
-              Nessun dato trovato. Verifica di aver eseguito `supabase/migrations/20260428140500_init.sql` e `supabase/seed.sql` nel tuo progetto Supabase.
+              Nessun dato trovato. Verifica di aver eseguito lo schema SQL sul database (es. `backend/db/schema_railway_full.sql`) e di aver popolato le tabelle.
             </p>
           </div>
         </section>
@@ -262,7 +262,7 @@ export default function Home() {
         <section className="py-16">
           <div className="max-w-4xl mx-auto px-4 text-center">
             <p className="text-destructive">
-              Errore nel caricamento dati da Supabase. Controlla `.env.local` e le policy RLS.
+              Errore nel caricamento dati dall&apos;API. Controlla che il backend sia attivo, che <code className="text-xs">VITE_API_URL</code> punti al backend (URL con <code className="text-xs">/api</code>) e che CORS sul backend includa il dominio del sito.
             </p>
             {errorDetails && (
               <p className="text-xs text-muted-foreground mt-3 break-words">{errorDetails}</p>

@@ -36,14 +36,33 @@ const setToken = (token) => {
   window.dispatchEvent(new CustomEvent(AUTH_EVENT, { detail: { token: token || null } }));
 };
 
+const looksLikeHtml = (text) => /^\s*</.test(text || "");
+
 const parseError = async (res) => {
   const text = await res.text();
   if (!text) return `${res.status} ${res.statusText}`;
+  if (looksLikeHtml(text)) {
+    return `Risposta HTML invece di JSON (${res.status}). Verifica che VITE_API_URL punti al backend (es. …/api), non al solo dominio del sito.`;
+  }
   try {
     const json = JSON.parse(text);
     return json.message || json.error || `${res.status} ${res.statusText}`;
   } catch {
-    return text;
+    return text.slice(0, 200);
+  }
+};
+
+const parseJsonBody = (text, resUrl) => {
+  if (!text) return null;
+  if (looksLikeHtml(text)) {
+    throw new Error(
+      `L'API ha restituito una pagina HTML invece di JSON. Controlla VITE_API_URL (deve essere l'URL del backend con /api). URL richiesta: ${resUrl}`,
+    );
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`Risposta non JSON: ${text.slice(0, 120)}…`);
   }
 };
 
@@ -58,7 +77,8 @@ const request = async (path, options = {}) => {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const url = `${API_BASE_URL}${path}`;
+  const res = await fetch(url, {
     method: options.method || "GET",
     headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
@@ -71,8 +91,7 @@ const request = async (path, options = {}) => {
 
   if (res.status === 204) return null;
   const text = await res.text();
-  if (!text) return null;
-  return JSON.parse(text);
+  return parseJsonBody(text, url);
 };
 
 const parseOrder = (orderBy) => {
