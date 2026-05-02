@@ -29,6 +29,11 @@ app.use(
 // Upload immagini lato frontend usa data URL (base64), quindi serve un limite più alto.
 app.use(express.json({ limit: "15mb" }));
 
+/** Railway / probe generici spesso chiamano `/`; senza route si avrebbe 404 e il deploy può restare non routabile (502). */
+app.get("/", (req, res) => {
+  res.json({ ok: true });
+});
+
 /** Verifica che il processo Express sia su. */
 app.get("/health", (req, res) => {
   res.json({ ok: true });
