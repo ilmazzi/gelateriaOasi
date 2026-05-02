@@ -5,8 +5,19 @@ import { query } from "./utils/connectDB.js";
 import authRoutes from "./routes/authRoutes.js";
 import entitiesRoutes from "./routes/entitiesRoutes.js";
 
+/** Railway imposta PORT; stringhe vuote o valori non numerici causerebbero bind sulla porta sbagliata → 502 dal proxy. */
+const resolveListenPort = () => {
+  const raw = process.env.PORT;
+  if (raw === undefined || raw === null || String(raw).trim() === "") return 3000;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : 3000;
+};
+
 const app = express();
-const port = process.env.PORT || 3000;
+const port = resolveListenPort();
+
+/** Dietro il proxy Railway (HTTPS terminato dall’edge). */
+app.set("trust proxy", 1);
 
 /** Più affidabile di "*" con preflight + header Authorization (vedi fetch API). */
 const parseCorsOrigins = (raw) => {
@@ -62,6 +73,13 @@ app.use((err, req, res, next) => {
   res.status(statusCode).json({ error: message });
 });
 
-app.listen(Number(port), "0.0.0.0", () => {
-  console.log(`Server listening on 0.0.0.0:${port}`);
+const host = process.env.HOST || "0.0.0.0";
+
+const server = app.listen(port, host, () => {
+  console.log(`[startup] NODE_ENV=${process.env.NODE_ENV ?? "(unset)"} PORT(env)=${JSON.stringify(process.env.PORT)} listen=${host}:${port}`);
+});
+
+server.on("error", (err) => {
+  console.error("[startup] listen failed:", err);
+  process.exit(1);
 });
