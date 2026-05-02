@@ -1,4 +1,5 @@
 import "dotenv/config";
+import http from "http";
 import express from "express";
 import cors from "cors";
 import { query } from "./utils/connectDB.js";
@@ -73,10 +74,15 @@ app.use((err, req, res, next) => {
   res.status(statusCode).json({ error: message });
 });
 
+/** Railway raggiunge il container via IPv4; binding esplicito su tutte le interfacce IPv4. */
 const host = process.env.HOST || "0.0.0.0";
 
-const server = app.listen(port, host, () => {
-  console.log(`[startup] NODE_ENV=${process.env.NODE_ENV ?? "(unset)"} PORT(env)=${JSON.stringify(process.env.PORT)} listen=${host}:${port}`);
+const server = http.createServer(app);
+
+server.listen(port, host, () => {
+  console.log(
+    `[startup] pid=${process.pid} NODE_ENV=${process.env.NODE_ENV ?? "(unset)"} PORT(env)=${JSON.stringify(process.env.PORT)} listen=http://${host}:${port}`,
+  );
 });
 
 server.on("error", (err) => {
