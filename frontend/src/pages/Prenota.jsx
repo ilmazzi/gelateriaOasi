@@ -121,9 +121,18 @@ export default function Prenota() {
 
       return apiClient.entities.Prenotazione.create(bookingPayload);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setSuccess(true);
       setForm(initialForm);
+      if (data?._bookingEmailsSent === false) {
+        toast({
+          title: "Prenotazione registrata",
+          description:
+            data?._bookingEmailsError ||
+            "Non abbiamo potuto inviare le email di conferma; ti contatteremo comunque.",
+          variant: "destructive",
+        });
+      }
     },
     onError: (error) => {
       toast({

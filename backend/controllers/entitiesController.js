@@ -1,4 +1,10 @@
 import { query } from "../utils/connectDB.js";
+import {
+  isBookingEmailConfigured,
+  isBrevoOutboundConfigured,
+  sendBookingStatusEmail,
+  sendNewBookingEmails,
+} from "../services/bookingEmails.js";
 
 const TABLES = {
   gelati: {
@@ -186,7 +192,27 @@ export const createEntity = async (req, res) => {
     const sql = `INSERT INTO public.${table.name} (${keys.join(", ")}) VALUES (${placeholders}) RETURNING *`;
     const { rows } = await query(sql, values);
 
-    return res.status(201).json(normalizeRow(rows[0]));
+    const row = normalizeRow(rows[0]);
+    const extra = {};
+
+    if (table.name === "prenotazioni") {
+      if (isBookingEmailConfigured()) {
+        try {
+          await sendNewBookingEmails(row);
+          extra._bookingEmailsSent = true;
+        } catch (mailErr) {
+          console.error("createEntity booking email", mailErr);
+          extra._bookingEmailsSent = false;
+          extra._bookingEmailsError = mailErr instanceof Error ? mailErr.message : String(mailErr);
+        }
+      } else {
+        console.warn(
+          "[booking] email non inviate: configura BREVO_API_KEY, BOOKING_FROM_EMAIL, GELATERIA_BOOKING_EMAIL sul backend",
+        );
+      }
+    }
+
+    return res.status(201).json({ ...row, ...extra });
   } catch (err) {
     console.error("createEntity", err);
     return res.status(500).json({ message: "Errore server" });
@@ -203,6 +229,16 @@ export const updateEntity = async (req, res) => {
     if (!keys.length) return res.status(400).json({ message: "Payload vuoto" });
 
     const id = req.params.id;
+
+    let prevStato = null;
+    if (table.name === "prenotazioni" && Object.prototype.hasOwnProperty.call(payload, "stato")) {
+      const { rows: prevRows } = await query(`SELECT stato FROM public.${table.name} WHERE ${table.idColumn} = $1`, [
+        id,
+      ]);
+      if (!prevRows[0]) return res.status(404).json({ message: "Record non trovato" });
+      prevStato = prevRows[0].stato;
+    }
+
     const assignments = keys.map((key, i) => `${key} = $${i + 1}`).join(", ");
     const values = [...keys.map((key) => payload[key]), id];
 
@@ -210,7 +246,32 @@ export const updateEntity = async (req, res) => {
     const { rows } = await query(sql, values);
     if (!rows[0]) return res.status(404).json({ message: "Record non trovato" });
 
-    return res.json(normalizeRow(rows[0]));
+    const row = normalizeRow(rows[0]);
+    const extra = {};
+
+    if (
+      table.name === "prenotazioni" &&
+      Object.prototype.hasOwnProperty.call(payload, "stato") &&
+      prevStato != null &&
+      String(prevStato) !== String(row.stato)
+    ) {
+      if (row.email && String(row.email).trim()) {
+        if (isBrevoOutboundConfigured()) {
+          try {
+            await sendBookingStatusEmail(row);
+            extra._statusEmailSent = true;
+          } catch (mailErr) {
+            console.error("updateEntity status email", mailErr);
+            extra._statusEmailSent = false;
+            extra._statusEmailError = mailErr instanceof Error ? mailErr.message : String(mailErr);
+          }
+        } else {
+          console.warn("[booking] email stato non inviata: imposta BREVO_API_KEY e BOOKING_FROM_EMAIL sul backend");
+        }
+      }
+    }
+
+    return res.json({ ...row, ...extra });
   } catch (err) {
     console.error("updateEntity", err);
     return res.status(500).json({ message: "Errore server" });

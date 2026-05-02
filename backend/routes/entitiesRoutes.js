@@ -16,8 +16,15 @@ router.get("/entities/:table", listEntities);
 router.post("/entities/:table/filter", filterEntities);
 router.get("/categorie/by-product-type/:productType", listCategorieByProductType);
 
-// Public write only for bookings
-router.post("/entities/prenotazioni", createEntity);
+// Public write only for bookings (createEntity usa req.params.table)
+router.post(
+  "/entities/prenotazioni",
+  (req, _res, next) => {
+    req.params.table = "prenotazioni";
+    next();
+  },
+  createEntity,
+);
 
 // Admin writes for everything else
 router.post("/entities/:table", authenticate, requireAdmin, createEntity);
