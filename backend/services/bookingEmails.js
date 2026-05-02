@@ -1,7 +1,23 @@
 /**
  * Template prenotazioni + invio tramite Brevo (ex Sendinblue).
  * Variabili env (Railway / .env): BREVO_API_KEY, BOOKING_FROM_EMAIL, GELATERIA_BOOKING_EMAIL
+ * Alias chiave API: SENDINBLUE_API_KEY (nome storico).
  */
+
+const stripEnv = (raw) => {
+  let s = String(raw ?? "").trim();
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    s = s.slice(1, -1).trim();
+  }
+  return s;
+};
+
+const brevoApiKey = () =>
+  stripEnv(process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY || process.env.BREVO_KEY || "");
+
+const bookingFromEmail = () => stripEnv(process.env.BOOKING_FROM_EMAIL || "");
+
+const gelateriaBookingEmail = () => stripEnv(process.env.GELATERIA_BOOKING_EMAIL || "");
 
 const escapeHtml = (value) =>
   String(value ?? "-")
@@ -165,52 +181,83 @@ const buildStatusHtml = (booking, statoLabel) => {
 };
 
 async function sendBrevoEmail(to, subject, text, html) {
-  const brevoApiKey = process.env.BREVO_API_KEY?.trim();
-  const fromEmail = process.env.BOOKING_FROM_EMAIL?.trim();
+  const key = brevoApiKey();
+  const fromRaw = bookingFromEmail();
 
-  if (!brevoApiKey || !fromEmail) {
-    throw new Error("Config email mancante: imposta BREVO_API_KEY e BOOKING_FROM_EMAIL sul backend");
+  if (!key || !fromRaw) {
+    throw new Error(
+      "Config email mancante: imposta BREVO_API_KEY (o SENDINBLUE_API_KEY) e BOOKING_FROM_EMAIL sul backend Railway.",
+    );
   }
 
-  const senderMatch = fromEmail.match(/^(.*)<(.+)>$/);
+  const senderMatch = fromRaw.match(/^(.*)<(.+)>$/);
   const sender = senderMatch
-    ? { name: senderMatch[1].trim().replace(/^"|"$/g, ""), email: senderMatch[2].trim() }
-    : { name: "Gelateria Oasi", email: fromEmail.trim() };
+    ? { name: senderMatch[1].trim().replace(/^"|"$/g, ""), email: stripEnv(senderMatch[2]) }
+    : { name: "Gelateria Oasi", email: fromRaw };
 
   const response = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: {
-      "api-key": brevoApiKey,
+      "api-key": key,
       "Content-Type": "application/json",
+      Accept: "application/json",
     },
     body: JSON.stringify({
       sender,
-      to: [{ email: to }],
+      to: [{ email: stripEnv(to) }],
       subject,
       textContent: text,
       htmlContent: html,
     }),
   });
 
+  const rawBody = await response.text();
   if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Invio email fallito (${response.status}): ${body}`);
+    let hint = rawBody.slice(0, 400);
+    try {
+      const j = JSON.parse(rawBody);
+      if (j.message) hint = j.message;
+      if (Array.isArray(j.code)) hint = `${hint} (${j.code.join(", ")})`;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(`Brevo HTTP ${response.status}: ${hint}`);
+  }
+
+  try {
+    const j = JSON.parse(rawBody);
+    if (j.messageId != null) {
+      console.log(`[booking-email] Brevo ok messageId=${j.messageId} to=${stripEnv(to)}`);
+    }
+  } catch {
+    console.log(`[booking-email] Brevo ok to=${stripEnv(to)}`);
   }
 }
 
 /** Solo mittente Brevo (es. cambio stato → mail al cliente). */
 export function isBrevoOutboundConfigured() {
-  return Boolean(process.env.BREVO_API_KEY?.trim() && process.env.BOOKING_FROM_EMAIL?.trim());
+  return Boolean(brevoApiKey() && bookingFromEmail());
 }
 
 /** Nuova prenotazione: gelateria + cliente → serve anche inbox locale. */
 export function isBookingEmailConfigured() {
-  return isBrevoOutboundConfigured() && Boolean(process.env.GELATERIA_BOOKING_EMAIL?.trim());
+  return isBrevoOutboundConfigured() && Boolean(gelateriaBookingEmail());
+}
+
+/** Diagnostica senza secret (health check). */
+export function getBookingEmailDiagnostics() {
+  return {
+    brevoApiKeyPresent: Boolean(brevoApiKey()),
+    bookingFromPresent: Boolean(bookingFromEmail()),
+    gelateriaInboxPresent: Boolean(gelateriaBookingEmail()),
+    outboundReady: isBrevoOutboundConfigured(),
+    newBookingReady: isBookingEmailConfigured(),
+  };
 }
 
 /** Notifica gelateria + conferma cliente (se ha email). */
 export async function sendNewBookingEmails(booking) {
-  const gelateriaEmail = process.env.GELATERIA_BOOKING_EMAIL?.trim();
+  const gelateriaEmail = gelateriaBookingEmail();
   if (!gelateriaEmail) {
     throw new Error("Config mancante: GELATERIA_BOOKING_EMAIL");
   }

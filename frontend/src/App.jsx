@@ -20,6 +20,7 @@ import AdminGelati from '@/pages/admin/AdminGelati';
 import AdminPromozioni from '@/pages/admin/AdminPromozioni';
 import AdminFoto from '@/pages/admin/AdminFoto';
 import AdminPrenotazioni from '@/pages/admin/AdminPrenotazioni';
+import AdminBanco from '@/pages/admin/AdminBanco';
 import AdminLogin from '@/pages/admin/AdminLogin';
 import AdminResetPassword from '@/pages/admin/AdminResetPassword';
 import AdminPanini from '@/pages/admin/AdminPanini';
@@ -83,6 +84,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/promozioni" element={<AdminPromozioni />} />
         <Route path="/admin/foto" element={<AdminFoto />} />
         <Route path="/admin/prenotazioni" element={<AdminPrenotazioni />} />
+        <Route path="/admin/banco" element={<AdminBanco />} />
         <Route path="/admin/negozio" element={<AdminNegozio />} />
         <Route path="/admin/categorie" element={<AdminCategorie />} />
         <Route path="/admin/vaschette" element={<AdminVaschette />} />

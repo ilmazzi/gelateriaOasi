@@ -207,8 +207,11 @@ export const createEntity = async (req, res) => {
         }
       } else {
         console.warn(
-          "[booking] email non inviate: configura BREVO_API_KEY, BOOKING_FROM_EMAIL, GELATERIA_BOOKING_EMAIL sul backend",
+          "[booking] email non inviate: configura BREVO_API_KEY (o SENDINBLUE_API_KEY), BOOKING_FROM_EMAIL, GELATERIA_BOOKING_EMAIL sul backend",
         );
+        extra._bookingEmailsSent = false;
+        extra._bookingEmailsError =
+          "Email non configurata sul server (variabili Brevo mancanti). Controlla Railway → backend → Variables.";
       }
     }
 

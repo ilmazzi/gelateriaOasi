@@ -3,6 +3,7 @@ import http from "http";
 import express from "express";
 import cors from "cors";
 import { query, warmupDbPool } from "./utils/connectDB.js";
+import { getBookingEmailDiagnostics } from "./services/bookingEmails.js";
 import authRoutes from "./routes/authRoutes.js";
 import entitiesRoutes from "./routes/entitiesRoutes.js";
 
@@ -71,6 +72,11 @@ app.get("/health/db", async (req, res) => {
       error: err.message,
     });
   }
+});
+
+/** Verifica variabili Brevo (senza esporre chiavi). Utile su Railway se le mail non partono. */
+app.get("/health/email", (_req, res) => {
+  res.json({ ok: true, ...getBookingEmailDiagnostics() });
 });
 
 app.use("/api", authRoutes);

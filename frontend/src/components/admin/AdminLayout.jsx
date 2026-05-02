@@ -1,6 +1,6 @@
 import React from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { IceCreamCone, LayoutDashboard, Tag, Image, ShoppingBag, ArrowLeft, Sandwich, Store, Package } from "lucide-react";
+import { IceCreamCone, LayoutDashboard, Tag, Image, ShoppingBag, ArrowLeft, Sandwich, Store, Package, TabletSmartphone } from "lucide-react";
 
 const adminLinks = [
   { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
@@ -8,6 +8,7 @@ const adminLinks = [
   { label: "Promozioni", path: "/admin/promozioni", icon: Tag },
   { label: "Foto", path: "/admin/foto", icon: Image },
   { label: "Prenotazioni", path: "/admin/prenotazioni", icon: ShoppingBag },
+  { label: "Banco", path: "/admin/banco", icon: TabletSmartphone },
   { label: "Panini", path: "/admin/panini", icon: Sandwich },
   { label: "Negozio", path: "/admin/negozio", icon: Store },
   { label: "Categorie", path: "/admin/categorie", icon: Tag },
@@ -16,6 +17,7 @@ const adminLinks = [
 
 export default function AdminLayout() {
   const location = useLocation();
+  const isFullWidth = location.pathname === "/admin/banco";
 
   return (
     <div className="min-h-screen font-body bg-background">
@@ -84,8 +86,8 @@ export default function AdminLayout() {
         </div>
 
         {/* Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 md:pt-6 pt-20">
-          <div className="max-w-6xl mx-auto">
+        <main className={`flex-1 ${isFullWidth ? "p-0 md:pt-0 pt-16" : "p-4 sm:p-6 lg:p-8 md:pt-6 pt-20"}`}>
+          <div className={isFullWidth ? "w-full" : "max-w-6xl mx-auto"}>
             <Outlet />
           </div>
         </main>
