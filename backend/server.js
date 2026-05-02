@@ -82,6 +82,17 @@ app.use((err, req, res, next) => {
   res.status(statusCode).json({ error: message });
 });
 
+/** Handshake minimale prima di Express: se `/ping` risponde ma `/health` no → problema nella stack Express; se anche `/ping` è 502 → traffico non arriva al pod (URL/networking Railway sbagliati). */
+function dispatch(req, res) {
+  const path = req.url?.split("?")[0] ?? "";
+  if (req.method === "GET" && path === "/ping") {
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ ok: true, tier: "raw-http" }));
+    return;
+  }
+  app(req, res);
+}
+
 /**
  * Railway instrada di solito verso il container in IPv4. Se si prova prima `::`, il socket può essere IPv6-only e il proxy non raggiunge mai l’app → 502 con log “listening”.
  * Ordine default: IPv4 tutte le interfacce → poi IPv6.
@@ -98,7 +109,7 @@ function startServer(hostIndex) {
   }
 
   const host = bindHosts[hostIndex];
-  const server = http.createServer(app);
+  const server = http.createServer(dispatch);
 
   const onEarlyError = (err) => {
     console.warn(`[startup] bind ${JSON.stringify(host)}:${port} → ${err.code ?? ""} ${err.message}`);
