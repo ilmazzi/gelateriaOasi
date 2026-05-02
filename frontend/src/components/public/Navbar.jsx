@@ -24,7 +24,14 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2 group">
-            <IceCreamCone className="w-7 h-7 text-primary transition-transform group-hover:rotate-12" />
+            <img
+              src="/logo-oasi.png"
+              alt=""
+              width={160}
+              height={160}
+              className="h-8 w-auto shrink-0 transition-transform duration-300 group-hover:scale-105"
+              decoding="async"
+            />
             <span className="font-heading text-xl font-bold text-foreground">Bar Gelateria L'Oasi</span>
           </Link>
 

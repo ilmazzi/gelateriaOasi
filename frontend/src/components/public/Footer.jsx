@@ -1,4 +1,4 @@
-import { IceCreamCone, MapPin, Phone, Clock, Camera, CircleUserRound } from "lucide-react";
+import { MapPin, Phone, Clock, Camera, CircleUserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/api/apiClient.js";
@@ -17,7 +17,14 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <IceCreamCone className="w-6 h-6 text-primary" />
+              <img
+                src="/logo-oasi.png"
+                alt=""
+                width={160}
+                height={160}
+                className="h-8 w-auto shrink-0"
+                decoding="async"
+              />
               <span className="font-heading text-lg font-bold">
                 {info.nome || "Bar Gelateria L'Oasi"}
               </span>
