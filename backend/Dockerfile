@@ -10,5 +10,4 @@ COPY . .
 
 ENV NODE_ENV=production
 
-# Railway imposta PORT a runtime
 CMD ["node", "server.js"]

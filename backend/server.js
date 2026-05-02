@@ -41,6 +41,14 @@ app.use(
 // Upload immagini lato frontend usa data URL (base64), quindi serve un limite più alto.
 app.use(express.json({ limit: "15mb" }));
 
+/** Sul container `listen(::)` può essere IPv6-only (IPV6_V6ONLY): il proxy Railway verso il pod è spesso IPv4 → 502. Imposta `LOG_HTTP=1` su Railway per vedere le richieste in log. */
+if (process.env.LOG_HTTP === "1") {
+  app.use((req, _res, next) => {
+    console.log(`[http] ${req.method} ${req.url}`);
+    next();
+  });
+}
+
 /** Railway / probe generici spesso chiamano `/`; senza route si avrebbe 404 e il deploy può restare non routabile (502). */
 app.get("/", (req, res) => {
   res.json({ ok: true });
@@ -75,13 +83,13 @@ app.use((err, req, res, next) => {
 });
 
 /**
- * Alcuni ambienti Cloud raggiungono il pod via IPv6; bind solo su 0.0.0.0 non riceve quel traffico → 502 pur essendo “listening”.
- * Ordine: HOST esplicito (env) → :: → 0.0.0.0
+ * Railway instrada di solito verso il container in IPv4. Se si prova prima `::`, il socket può essere IPv6-only e il proxy non raggiunge mai l’app → 502 con log “listening”.
+ * Ordine default: IPv4 tutte le interfacce → poi IPv6.
  */
 const bindHosts =
   process.env.HOST != null && String(process.env.HOST).trim() !== ""
     ? [String(process.env.HOST).trim()]
-    : ["::", "0.0.0.0"];
+    : ["0.0.0.0", "::"];
 
 function startServer(hostIndex) {
   if (hostIndex >= bindHosts.length) {
