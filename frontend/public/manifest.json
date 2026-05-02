@@ -8,13 +8,13 @@
   "theme_color": "#ea580c",
   "icons": [
     {
-      "src": "/logo-oasi-icon.png",
+      "src": "/logo-oasi-icon.png?iconVer=3",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/logo-oasi.png",
+      "src": "/logo-oasi.png?iconVer=3",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
