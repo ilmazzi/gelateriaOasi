@@ -74,18 +74,40 @@ app.use((err, req, res, next) => {
   res.status(statusCode).json({ error: message });
 });
 
-/** Railway raggiunge il container via IPv4; binding esplicito su tutte le interfacce IPv4. */
-const host = process.env.HOST || "0.0.0.0";
+/**
+ * Alcuni ambienti Cloud raggiungono il pod via IPv6; bind solo su 0.0.0.0 non riceve quel traffico → 502 pur essendo “listening”.
+ * Ordine: HOST esplicito (env) → :: → 0.0.0.0
+ */
+const bindHosts =
+  process.env.HOST != null && String(process.env.HOST).trim() !== ""
+    ? [String(process.env.HOST).trim()]
+    : ["::", "0.0.0.0"];
 
-const server = http.createServer(app);
+function startServer(hostIndex) {
+  if (hostIndex >= bindHosts.length) {
+    console.error("[startup] bind fallito su tutti gli host:", bindHosts.join(", "));
+    process.exit(1);
+  }
 
-server.listen(port, host, () => {
-  console.log(
-    `[startup] pid=${process.pid} NODE_ENV=${process.env.NODE_ENV ?? "(unset)"} PORT(env)=${JSON.stringify(process.env.PORT)} listen=http://${host}:${port}`,
-  );
-});
+  const host = bindHosts[hostIndex];
+  const server = http.createServer(app);
 
-server.on("error", (err) => {
-  console.error("[startup] listen failed:", err);
-  process.exit(1);
-});
+  const onEarlyError = (err) => {
+    console.warn(`[startup] bind ${JSON.stringify(host)}:${port} → ${err.code ?? ""} ${err.message}`);
+    server.close(() => startServer(hostIndex + 1));
+  };
+
+  server.once("error", onEarlyError);
+
+  server.listen(port, host, () => {
+    server.off("error", onEarlyError);
+    server.on("error", (err) => console.error("[runtime] HTTP server error:", err));
+
+    const addr = server.address();
+    console.log(
+      `[startup] pid=${process.pid} NODE_ENV=${process.env.NODE_ENV ?? "(unset)"} PORT(env)=${JSON.stringify(process.env.PORT)} address=${JSON.stringify(addr)}`,
+    );
+  });
+}
+
+startServer(0);
