@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { apiClient } from "@/api/apiClient.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -9,12 +9,14 @@ import {
   CalendarDays,
   Check,
   Clock,
+  Bell,
   IceCreamBowl,
   Phone,
   RefreshCw,
   Search,
   ShoppingBag,
   Timer,
+  Volume2,
 } from "lucide-react";
 
 const states = {
@@ -161,6 +163,29 @@ const sortBookings = (a, b) => {
   return String(a.nome_cliente || "").localeCompare(String(b.nome_cliente || ""));
 };
 
+const notifyNewBooking = (booking) => {
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+  const title = "Nuova prenotazione";
+  const body = `${booking.nome_cliente || "Cliente"} - ${normalizeDate(booking.data_ritiro) || "data da confermare"} ${normalizeTime(booking.ora_ritiro) || ""}`.trim();
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.ready
+      .then((registration) =>
+        registration.showNotification(title, {
+          body,
+          icon: "/logo-oasi-icon.png?iconVer=3",
+          badge: "/favicon-32.png?iconVer=3",
+          tag: `prenotazione-${booking.id}`,
+        }),
+      )
+      .catch(() => new Notification(title, { body, icon: "/logo-oasi-icon.png?iconVer=3" }));
+    return;
+  }
+
+  new Notification(title, { body, icon: "/logo-oasi-icon.png?iconVer=3" });
+};
+
 function StatBox({ label, value, className = "" }) {
   return (
     <div className={`rounded-2xl border border-border/60 bg-card px-4 py-3 shadow-sm ${className}`}>
@@ -277,6 +302,9 @@ export default function AdminBanco() {
   const { toast } = useToast();
   const [filter, setFilter] = useState("today");
   const [search, setSearch] = useState("");
+  const [alertsEnabled, setAlertsEnabled] = useState(false);
+  const audioContextRef = useRef(null);
+  const knownBookingIdsRef = useRef(null);
 
   const {
     data: bookings = [],
@@ -313,6 +341,74 @@ export default function AdminBanco() {
     },
   });
 
+  const playBookingSound = () => {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+
+    const context = audioContextRef.current || new AudioContext();
+    audioContextRef.current = context;
+    if (context.state === "suspended") void context.resume();
+
+    const now = context.currentTime;
+    const gain = context.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.22, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+    gain.connect(context.destination);
+
+    [0, 0.18].forEach((offset) => {
+      const oscillator = context.createOscillator();
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(880, now + offset);
+      oscillator.frequency.exponentialRampToValueAtTime(660, now + offset + 0.12);
+      oscillator.connect(gain);
+      oscillator.start(now + offset);
+      oscillator.stop(now + offset + 0.16);
+    });
+  };
+
+  const enableAlerts = async () => {
+    try {
+      playBookingSound();
+      if ("Notification" in window && Notification.permission === "default") {
+        await Notification.requestPermission();
+      }
+      setAlertsEnabled(true);
+      toast({
+        title: "Avvisi attivi",
+        description: "Il tablet suonera quando arriva una nuova prenotazione.",
+      });
+    } catch (error) {
+      toast({
+        title: "Avvisi non attivati",
+        description: error.message || "Il browser ha bloccato audio o notifiche.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    const currentIds = new Set(bookings.map((booking) => String(booking.id)));
+    const knownIds = knownBookingIdsRef.current;
+
+    if (!knownIds) {
+      knownBookingIdsRef.current = currentIds;
+      return;
+    }
+
+    const newBookings = bookings.filter((booking) => !knownIds.has(String(booking.id)));
+    knownBookingIdsRef.current = currentIds;
+
+    if (!alertsEnabled || newBookings.length === 0) return;
+
+    playBookingSound();
+    notifyNewBooking(newBookings[0]);
+    toast({
+      title: newBookings.length === 1 ? "Nuova prenotazione" : `${newBookings.length} nuove prenotazioni`,
+      description: newBookings[0]?.nome_cliente || "Controlla il banco prenotazioni.",
+    });
+  }, [alertsEnabled, bookings, toast]);
+
   const visibleBookings = useMemo(
     () => bookings.filter((booking) => matchesFilter(booking, filter)).filter((booking) => searchBooking(booking, search)).sort(sortBookings),
     [bookings, filter, search],
@@ -343,7 +439,7 @@ export default function AdminBanco() {
               </div>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-[1fr_auto] xl:min-w-[640px]">
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto] xl:min-w-[760px]">
               <label className="relative block">
                 <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -353,6 +449,18 @@ export default function AdminBanco() {
                   onChange={(event) => setSearch(event.target.value)}
                 />
               </label>
+              <Button
+                className={`h-12 rounded-full border-border/70 shadow-sm ${
+                  alertsEnabled
+                    ? "bg-primary text-primary-foreground hover:bg-primary/85"
+                    : "bg-card text-foreground hover:bg-secondary"
+                }`}
+                variant={alertsEnabled ? "default" : "outline"}
+                onClick={enableAlerts}
+              >
+                {alertsEnabled ? <Volume2 className="size-4" /> : <Bell className="size-4" />}
+                {alertsEnabled ? "Avvisi attivi" : "Attiva avvisi"}
+              </Button>
               <Button className="h-12 rounded-full border-border/70 bg-card text-foreground shadow-sm hover:bg-secondary" variant="outline" onClick={() => refetch()}>
                 <RefreshCw className={`size-4 ${isFetching ? "animate-spin" : ""}`} />
                 Aggiorna
