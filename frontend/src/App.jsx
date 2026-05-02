@@ -26,15 +26,24 @@ import AdminPanini from '@/pages/admin/AdminPanini';
 import AdminNegozio from '@/pages/admin/AdminNegozio';
 import AdminCategorie from '@/pages/admin/AdminCategorie';
 import AdminVaschette from '@/pages/admin/AdminVaschette';
-const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, isAuthenticated, isAdmin, authError, navigateToLogin } = useAuth();
+const fullPageSpinner = (
+  <div className="fixed inset-0 flex items-center justify-center">
+    <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+  </div>
+);
 
-  if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-      </div>
-    );
+const AuthenticatedApp = () => {
+  const {
+    isLoadingPublicSettings,
+    isAuthenticated,
+    isAdmin,
+    authError,
+    navigateToLogin,
+    authChecked,
+  } = useAuth();
+
+  if (isLoadingPublicSettings) {
+    return fullPageSpinner;
   }
 
   if (authError) {
@@ -59,7 +68,9 @@ const AuthenticatedApp = () => {
       <Route path="/admin/reset-password" element={<AdminResetPassword />} />
       <Route
         element={
-          isAuthenticated && isAdmin ? (
+          !authChecked ? (
+            fullPageSpinner
+          ) : isAuthenticated && isAdmin ? (
             <AdminLayout />
           ) : (
             <Navigate to="/admin/login" replace />

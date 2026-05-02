@@ -7,7 +7,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
+  /** Nessun fetch remoto: non bloccare il primo paint delle pagine pubbliche. */
+  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(false);
   const [authError, setAuthError] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings, setAppPublicSettings] = useState(null);
@@ -30,26 +31,14 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const checkAppState = useCallback(async () => {
-    try {
-      setIsLoadingPublicSettings(true);
-      setAuthError(null);
-      setAppPublicSettings({ public_settings: { auth_required: false } });
-      await checkUserAuth();
-    } catch (error) {
-      setAuthError({
-        type: "unknown",
-        message: error.message || "An unexpected error occurred",
-      });
-      setIsLoadingAuth(false);
-    } finally {
-      setIsLoadingPublicSettings(false);
-    }
-  }, [checkUserAuth]);
+  const checkAppState = useCallback(() => {
+    setAuthError(null);
+    setAppPublicSettings({ public_settings: { auth_required: false } });
+  }, []);
 
   useEffect(() => {
-    checkAppState();
-  }, [checkAppState]);
+    setAppPublicSettings({ public_settings: { auth_required: false } });
+  }, []);
 
   const logout = (shouldRedirect = true) => {
     setUser(null);

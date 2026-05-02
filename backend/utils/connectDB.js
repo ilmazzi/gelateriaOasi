@@ -18,14 +18,23 @@ const readConfig = () => {
 let pool;
 let poolInitError;
 
+/** Connessioni TLS verso Postgres gestite dal driver; qui solo dimensionamento pool e timeout di attesa. */
+const poolSizing = () => ({
+  max: Math.max(2, Math.min(Number(process.env.PG_POOL_MAX || 12), 30)),
+  idleTimeoutMillis: Number(process.env.PG_IDLE_MS || 30_000),
+  connectionTimeoutMillis: Number(process.env.PG_CONN_TIMEOUT_MS || 10_000),
+});
+
 const createPool = () => {
   const { databaseUrl, pgUser, pgPassword, pgHost, pgPort, pgDatabase } = readConfig();
   const ssl = useSsl() ? { ssl: { rejectUnauthorized: false } } : {};
+  const sizing = poolSizing();
 
   if (databaseUrl) {
     return new pg.Pool({
       connectionString: databaseUrl,
       ...ssl,
+      ...sizing,
     });
   }
   if (pgUser && pgPassword && pgHost && pgDatabase) {
@@ -36,6 +45,7 @@ const createPool = () => {
       port: Number(pgPort),
       database: pgDatabase,
       ...ssl,
+      ...sizing,
     });
   }
   return null;
@@ -62,3 +72,13 @@ const getPool = () => {
 };
 
 export const query = (text, params) => getPool().query(text, params);
+
+/** Dopo cold start apre subito 1–2 connessioni così la prima richiesta utente non paga tutto il handshake. */
+export async function warmupDbPool() {
+  try {
+    await Promise.all([query("SELECT 1"), query("SELECT 1 AS n")]);
+    console.log("[db] warmup ok");
+  } catch (err) {
+    console.warn("[db] warmup:", err instanceof Error ? err.message : err);
+  }
+}

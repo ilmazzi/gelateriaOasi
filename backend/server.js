@@ -2,7 +2,7 @@ import "dotenv/config";
 import http from "http";
 import express from "express";
 import cors from "cors";
-import { query } from "./utils/connectDB.js";
+import { query, warmupDbPool } from "./utils/connectDB.js";
 import authRoutes from "./routes/authRoutes.js";
 import entitiesRoutes from "./routes/entitiesRoutes.js";
 
@@ -126,6 +126,7 @@ function startServer(hostIndex) {
     console.log(
       `[startup] pid=${process.pid} NODE_ENV=${process.env.NODE_ENV ?? "(unset)"} PORT(env)=${JSON.stringify(process.env.PORT)} address=${JSON.stringify(addr)}`,
     );
+    void warmupDbPool();
   });
 }
 
