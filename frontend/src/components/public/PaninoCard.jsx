@@ -44,9 +44,9 @@ export default function PaninoCard({ panino, categoria, index = 0 }) {
           <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{panino.descrizione}</p>
         )}
         <div className="space-y-2">
-          {typeof panino.prezzo === "number" && (
+          {panino.prezzo != null && panino.prezzo !== "" && !Number.isNaN(Number(panino.prezzo)) && (
             <div className="inline-flex px-2 py-1 bg-primary/10 text-primary rounded-md text-xs font-semibold">
-              €{panino.prezzo.toFixed(2)}
+              €{Number(panino.prezzo).toFixed(2)}
             </div>
           )}
           {panino.ingredienti && (

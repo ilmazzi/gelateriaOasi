@@ -42,19 +42,19 @@ export default function GelatoCard({ gelato, categoria, index = 0 }) {
           <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{gelato.descrizione}</p>
         )}
         <div className="flex items-center gap-2 text-sm">
-          {gelato.prezzo_piccolo && (
+          {gelato.prezzo_piccolo != null && gelato.prezzo_piccolo !== "" && (
             <span className="px-2 py-1 bg-secondary rounded-md text-xs font-medium">
-              P €{gelato.prezzo_piccolo.toFixed(2)}
+              P €{Number(gelato.prezzo_piccolo).toFixed(2)}
             </span>
           )}
-          {gelato.prezzo_medio && (
+          {gelato.prezzo_medio != null && gelato.prezzo_medio !== "" && (
             <span className="px-2 py-1 bg-secondary rounded-md text-xs font-medium">
-              M €{gelato.prezzo_medio.toFixed(2)}
+              M €{Number(gelato.prezzo_medio).toFixed(2)}
             </span>
           )}
-          {gelato.prezzo_grande && (
+          {gelato.prezzo_grande != null && gelato.prezzo_grande !== "" && (
             <span className="px-2 py-1 bg-primary/10 text-primary rounded-md text-xs font-medium">
-              G €{gelato.prezzo_grande.toFixed(2)}
+              G €{Number(gelato.prezzo_grande).toFixed(2)}
             </span>
           )}
         </div>
